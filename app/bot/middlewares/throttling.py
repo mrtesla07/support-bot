@@ -16,7 +16,7 @@ class ThrottlingMiddleware(BaseMiddleware):
             self,
             *,
             default_key: Optional[str] = "default",
-            default_ttl: float = 1,
+            default_ttl: float = 0.05,
             **ttl_map: float,
     ) -> None:
         """
