@@ -1,60 +1,33 @@
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 
 from aiogram.utils.markdown import hbold
 
-# Add other languages and their corresponding codes as needed.
-# You can also keep only one language by removing the line with the unwanted language.
 SUPPORTED_LANGUAGES = {
-    "ru": "🇷🇺 Русский",
-    "en": "🇬🇧 English",
+    "ru": "Русский язык",
+    "en": "English",
 }
 
 
 class Text(metaclass=ABCMeta):
-    """
-    Abstract base class for handling text data in different languages.
-    """
+    """Abstract base class for handling text data in different languages."""
 
     def __init__(self, language_code: str) -> None:
-        """
-        Initializes the Text instance with the specified language code.
-
-        :param language_code: The language code (e.g., "ru" or "en").
-        """
-        self.language_code = language_code if language_code in SUPPORTED_LANGUAGES.keys() else "en"
+        self.language_code = language_code if language_code in SUPPORTED_LANGUAGES else "en"
 
     @property
     @abstractmethod
     def data(self) -> dict:
-        """
-        Abstract property to be implemented by subclasses. Represents the language-specific text data.
-
-        :return: Dictionary containing language-specific text data.
-        """
         raise NotImplementedError
 
     def get(self, code: str) -> str:
-        """
-        Retrieves the text corresponding to the provided code in the current language.
-
-        :param code: The code associated with the desired text.
-        :return: The text in the current language.
-        """
         return self.data[self.language_code][code]
 
 
 class TextMessage(Text):
-    """
-    Subclass of Text for managing text messages in different languages.
-    """
+    """Language-aware texts used by the bot."""
 
     @property
     def data(self) -> dict:
-        """
-        Provides language-specific text data for text messages.
-
-        :return: Dictionary containing language-specific text data for text messages.
-        """
         return {
             "en": {
                 "select_language": f"👋 <b>Hello</b>, {hbold('{full_name}')}!\n\nSelect language:",
@@ -63,26 +36,27 @@ class TextMessage(Text):
                 "message_sent": "<b>Message sent!</b> Expect a response.",
                 "message_edited": (
                     "<b>The message was edited only in your chat.</b> "
-                    "To send an edited message, send it as a new message."
+                    "If you want support to receive the new version, send it again."
+                ),
+                "source": (
+                    "Source code available at "
+                    "<a href=\"https://github.com/nessshon/support-bot\">GitHub</a>"
                 ),
                 "user_started_bot": (
                     f"User {hbold('{name}')} started the bot!\n\n"
                     "List of available commands:\n\n"
-                    "• /ban\n"
-                    "Block/Unblock user"
-                    "<blockquote>Block the user if you do not want to receive messages from him.</blockquote>\n\n"
-                    "• /silent\n"
-                    "Activate/Deactivate silent mode"
-                    "<blockquote>When silent mode is enabled, messages are not sent to the user.</blockquote>\n\n"
-                    "• /information\n"
-                    "User information"
-                    "<blockquote>Receive a message with basic information about the user.</blockquote>"
+                    "- /ban\n"
+                    "  Block or unblock the user.\n\n"
+                    "- /silent\n"
+                    "  Toggle silent mode. When enabled, replies are not sent to the user.\n\n"
+                    "- /information\n"
+                    "  Show a brief summary about the user."
                 ),
                 "user_restarted_bot": f"User {hbold('{name}')} restarted the bot!",
                 "user_stopped_bot": f"User {hbold('{name}')} stopped the bot!",
-                "user_blocked": "<b>User blocked!</b> Messages from the user are not accepted.",
-                "user_unblocked": "<b>User unblocked!</b> Messages from the user are being accepted again.",
-                "blocked_by_user": "<b>Message not sent!</b> The bot has been blocked by the user.",
+                "user_blocked": "<b>User blocked!</b> Messages from the user are ignored.",
+                "user_unblocked": "<b>User unblocked!</b> Messages from the user are accepted again.",
+                "blocked_by_user": "<b>Message not sent!</b> The bot is blocked by the user.",
                 "user_information": (
                     "<b>ID:</b>\n"
                     "- <code>{id}</code>\n"
@@ -98,41 +72,42 @@ class TextMessage(Text):
                     "- {created_at}"
                 ),
                 "message_not_sent": "<b>Message not sent!</b> An unexpected error occurred.",
-                "message_sent_to_user": "<b>Message sent to user!</b>",
+                "message_sent_to_user": "<b>Message sent to the user!</b>",
                 "silent_mode_enabled": (
-                    "<b>Silent mode activated!</b> Messages will not be delivered to the user."
+                    "<b>Silent mode enabled!</b> Messages will not be forwarded to the user."
                 ),
                 "silent_mode_disabled": (
-                    "<b>Silent mode deactivated!</b> The user will receive all messages."
+                    "<b>Silent mode disabled!</b> The user will receive all messages."
                 ),
             },
             "ru": {
                 "select_language": f"👋 <b>Привет</b>, {hbold('{full_name}')}!\n\nВыберите язык:",
                 "change_language": "<b>Выберите язык:</b>",
-                "main_menu": "<b>Оставьте свой вопрос</b>, и мы ответим вам в ближайшее время:",
+                "main_menu": "<b>Напишите свой вопрос</b>, и мы ответим как можно быстрее:",
                 "message_sent": "<b>Сообщение отправлено!</b> Ожидайте ответа.",
                 "message_edited": (
-                    "<b>Сообщение отредактировано только в вашем чате.</b> "
-                    "Чтобы отправить отредактированное сообщение, отправьте его как новое сообщение."
+                    "<b>Сообщение изменено только в вашем чате.</b> "
+                    "Если хотите, чтобы поддержка увидела новую версию, отправьте сообщение заново."
+                ),
+                "source": (
+                    "Исходный код доступен на "
+                    "<a href=\"https://github.com/nessshon/support-bot\">GitHub</a>"
                 ),
                 "user_started_bot": (
-                    f"Пользователь {hbold('{name}')} запустил(а) бота!\n\n"
+                    f"Пользователь {hbold('{name}')} запустил бота!\n\n"
                     "Список доступных команд:\n\n"
-                    "• /ban\n"
-                    "Заблокировать/Разблокировать пользователя"
-                    "<blockquote>Заблокируйте пользователя, если не хотите получать от него сообщения.</blockquote>\n\n"
-                    "• /silent\n"
-                    "Активировать/Деактивировать тихий режим"
-                    "<blockquote>При включенном тихом режиме сообщения не отправляются пользователю.</blockquote>\n\n"
-                    "• /information\n"
-                    "Информация о пользователе"
-                    "<blockquote>Получить сообщение с основной информацией о пользователе.</blockquote>"
+                    "- /ban\n"
+                    "  Заблокировать или разблокировать пользователя.\n\n"
+                    "- /silent\n"
+                    "  Включить или выключить тихий режим. В тихом режиме ответы не отправляются пользователю.\n\n"
+                    "- /information\n"
+                    "  Показать краткую информацию о пользователе."
                 ),
-                "user_restarted_bot": f"Пользователь {hbold('{name}')} перезапустил(а) бота!",
-                "user_stopped_bot": f"Пользователь {hbold('{name}')} остановил(а) бота!",
-                "user_blocked": "<b>Пользователь заблокирован!</b> Сообщения от пользователя не принимаются.",
-                "user_unblocked": "<b>Пользователь разблокирован!</b> Сообщения от пользователя вновь принимаются.",
-                "blocked_by_user": "<b>Сообщение не отправлено!</b> Бот был заблокирован пользователем.",
+                "user_restarted_bot": f"Пользователь {hbold('{name}')} перезапустил бота!",
+                "user_stopped_bot": f"Пользователь {hbold('{name}')} остановил бота!",
+                "user_blocked": "<b>Пользователь заблокирован!</b> Сообщения от него игнорируются.",
+                "user_unblocked": "<b>Пользователь разблокирован!</b> Сообщения снова принимаются.",
+                "blocked_by_user": "<b>Сообщение не отправлено!</b> Бот заблокирован пользователем.",
                 "user_information": (
                     "<b>ID:</b>\n"
                     "- <code>{id}</code>\n"
@@ -147,13 +122,13 @@ class TextMessage(Text):
                     "<b>Дата регистрации:</b>\n"
                     "- {created_at}"
                 ),
-                "message_not_sent": "<b>Сообщение не отправлено!</b> Произошла неожиданная ошибка.",
+                "message_not_sent": "<b>Сообщение не отправлено!</b> Произошла непредвиденная ошибка.",
                 "message_sent_to_user": "<b>Сообщение отправлено пользователю!</b>",
                 "silent_mode_enabled": (
-                    "<b>Тихий режим активирован!</b> Сообщения не будут доставлены пользователю."
+                    "<b>Тихий режим включён!</b> Сообщения не будут пересылаться пользователю."
                 ),
                 "silent_mode_disabled": (
-                    "<b>Тихий режим деактивирован!</b> Пользователь будет получать все сообщения."
+                    "<b>Тихий режим выключен!</b> Пользователь снова получает сообщения."
                 ),
             },
         }

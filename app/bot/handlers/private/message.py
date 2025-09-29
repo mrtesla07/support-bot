@@ -1,5 +1,3 @@
-import asyncio
-
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import StateFilter
@@ -29,12 +27,9 @@ async def handle_edited_message(message: Message, manager: Manager) -> None:
     """
     # Get the text for the edited message
     text = manager.text_message.get("message_edited")
-    # Reply to the edited message with the specified text
+    # Reply with a short-lived confirmation
     msg = await message.reply(text)
-    # Wait for 5 seconds before deleting the reply
-    await asyncio.sleep(5)
-    # Delete the reply to the edited message
-    await msg.delete()
+    Manager.schedule_message_cleanup(msg)
 
 
 @router.message(F.media_group_id)
@@ -100,9 +95,6 @@ async def handle_incoming_message(
 
     # Send a confirmation message to the user
     text = manager.text_message.get("message_sent")
-    # Reply to the edited message with the specified text
+    # Reply with a short-lived confirmation
     msg = await message.reply(text)
-    # Wait for 5 seconds before deleting the reply
-    await asyncio.sleep(5)
-    # Delete the reply to the edited message
-    await msg.delete()
+    Manager.schedule_message_cleanup(msg)

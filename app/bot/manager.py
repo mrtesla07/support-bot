@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import suppress
 from typing import Any, Dict
 
@@ -63,14 +64,15 @@ class Manager:
         """
         return self.__data
 
-    async def get_old_message_id(self) -> int:
+    async def get_old_message_id(self) -> int | None:
         """
         Get the old message ID stored in the FSM context.
 
-        :return: The old message ID.
+        :return: The old message ID if present, otherwise None.
         """
         data = await self.state.get_data()
-        return data.get("message_id", -1)
+        message_id = data.get("message_id")
+        return message_id if isinstance(message_id, int) else None
 
     async def send_message(
             self,
@@ -91,6 +93,7 @@ class Manager:
 
         :return: None.
         """
+        await self.delete_previous_message()
         message = await self.bot.send_message(
             text=text,
             chat_id=self.user.id,
@@ -99,8 +102,22 @@ class Manager:
             disable_notification=disable_notification,
             reply_markup=reply_markup,
         )
-        await self.delete_previous_message()
         await self.state.update_data(message_id=message.message_id)
+
+    @staticmethod
+    def schedule_message_cleanup(message: Message, delay: float = 5.0) -> None:
+        """
+        Schedule deletion of a message after a given delay.
+
+        :param message: The message that should be removed.
+        :param delay: Delay in seconds before deletion.
+        """
+        async def _cleanup() -> None:
+            await asyncio.sleep(delay)
+            with suppress(TelegramBadRequest):
+                await message.delete()
+
+        asyncio.create_task(_cleanup())
 
     @staticmethod
     async def delete_message(message: Message) -> None:
@@ -125,7 +142,8 @@ class Manager:
         :raise TelegramBadRequest: If there is an issue with deleting or editing the previous message.
         """
         message_id = await self.get_old_message_id()
-        if not message_id: return  # noqa:E701
+        if message_id is None:
+            return None
 
         try:
             await self.bot.delete_message(
