@@ -69,13 +69,3 @@ class Window:
         reply_markup = select_language_markup()
         await manager.send_message(text, reply_markup=reply_markup)
 
-    @staticmethod
-    async def command_source(manager: Manager) -> None:
-        """
-        Display the window with information about the command source.
-
-        :param manager: Manager object.
-        :return: None
-        """
-        text = manager.text_message.get("command_source")
-        await manager.send_message(text)
