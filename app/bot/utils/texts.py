@@ -3,8 +3,8 @@ from abc import ABCMeta, abstractmethod
 from aiogram.utils.markdown import hbold
 
 SUPPORTED_LANGUAGES = {
-    "ru": "Русский язык",
-    "en": "English",
+    "ru": "🇷🇺 Русский",
+    "en": "🇬🇧 English",
 }
 
 
@@ -40,7 +40,7 @@ class TextMessage(Text):
                 ),
                 "source": (
                     "Source code available at "
-                    "<a href=\"https://github.com/nessshon/support-bot\">GitHub</a>"
+                    "<a href=\"https://github.com/mrtesla07/support-bot\">GitHub</a>"
                 ),
                 "user_started_bot": (
                     f"User {hbold('{name}')} started the bot!\n\n"
@@ -91,7 +91,7 @@ class TextMessage(Text):
                 ),
                 "source": (
                     "Исходный код доступен на "
-                    "<a href=\"https://github.com/nessshon/support-bot\">GitHub</a>"
+                    "<a href=\"https://github.com/mrtesla07/support-bot\">GitHub</a>"
                 ),
                 "user_started_bot": (
                     f"Пользователь {hbold('{name}')} запустил бота!\n\n"
