@@ -79,6 +79,10 @@ class TextMessage(Text):
                 "silent_mode_disabled": (
                     "<b>Silent mode disabled!</b> The user will receive all messages."
                 ),
+                "support_reminder": (
+                    "<b>User {user} is waiting for a reply.</b>\nPlease check the conversation."
+                ),
+                "ticket_resolved": "<b>Ticket marked as resolved.</b>",
             },
             "ru": {
                 "select_language": f"👋 <b>Привет</b>, {hbold('{full_name}')}!\n\nВыберите язык:",
@@ -130,5 +134,9 @@ class TextMessage(Text):
                 "silent_mode_disabled": (
                     "<b>Тихий режим выключен!</b> Пользователь снова получает сообщения."
                 ),
+                "support_reminder": (
+                    "<b>{user} ждёт ответа.</b>\nПроверьте, пожалуйста, тему."
+                ),
+                "ticket_resolved": "<b>Тикет отмечен как решённый.</b>",
             },
         }

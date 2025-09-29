@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 
 from aiogram import Router, F
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import MagicData
 from aiogram.types import Message
@@ -10,6 +11,7 @@ from aiogram.utils.markdown import hlink
 from app.bot.manager import Manager
 from app.bot.types.album import Album
 from app.bot.utils.redis import RedisStorage
+from app.bot.utils.reminders import cancel_support_reminder
 
 router = Router()
 router.message.filter(
@@ -54,7 +56,7 @@ async def handler(message: Message) -> None:
 
 @router.message(F.media_group_id, F.from_user[F.is_bot.is_(False)])
 @router.message(F.media_group_id.is_(None), F.from_user[F.is_bot.is_(False)])
-async def handler(message: Message, manager: Manager, redis: RedisStorage, album: Optional[Album] = None) -> None:
+async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler, album: Optional[Album] = None) -> None:
     """
     Handles user messages and sends them to the respective user.
     If silent mode is enabled for the user, the messages are ignored.
@@ -90,3 +92,11 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage, album
     # Reply with a short-lived confirmation
     msg = await message.reply(text)
     Manager.schedule_message_cleanup(msg)
+
+    user_data.awaiting_reply = False
+    await redis.update_user(user_data.id, user_data)
+    cancel_support_reminder(
+        apscheduler,
+        user_data.id,
+    )
+

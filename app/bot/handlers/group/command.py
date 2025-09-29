@@ -4,10 +4,12 @@ from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, MagicData
 from aiogram.types import Message
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.utils.markdown import hcode, hbold
 
 from app.bot.manager import Manager
 from app.bot.utils.redis import RedisStorage
+from app.bot.utils.reminders import cancel_support_reminder
 
 router_id = Router()
 router_id.message.filter(
@@ -95,6 +97,19 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage) -> No
     text = manager.text_message.get("user_information")
     # Reply with formatted user information
     await message.reply(text.format_map(format_data))
+
+
+@router.message(Command("resolve"))
+async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler) -> None:
+    user_data = await redis.get_by_message_thread_id(message.message_thread_id)
+    if not user_data: return None  # noqa
+
+    user_data.ticket_status = "resolved"
+    user_data.awaiting_reply = False
+    await redis.update_user(user_data.id, user_data)
+    cancel_support_reminder(apscheduler, user_data.id)
+
+    await message.reply(manager.text_message.get("ticket_resolved"))
 
 
 @router.message(Command(commands=["ban"]))

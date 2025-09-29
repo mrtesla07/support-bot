@@ -1,7 +1,11 @@
+from datetime import datetime, timezone
+import re
+
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import StateFilter
 from aiogram.types import Message
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.bot.manager import Manager
 from app.bot.types.album import Album
@@ -11,6 +15,18 @@ from app.bot.utils.create_forum_topic import (
 )
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.redis.models import UserData
+from app.bot.utils.reminders import schedule_support_reminder
+
+GRATITUDE_PHRASES = {
+    'спасибо',
+    'спасибо большое',
+    'спасибо за помощь',
+    'благодарю',
+    'thank you',
+    'thanks',
+    'thx',
+}
+
 
 router = Router()
 router.message.filter(F.chat.type == "private", StateFilter(None))
@@ -39,6 +55,7 @@ async def handle_incoming_message(
         manager: Manager,
         redis: RedisStorage,
         user_data: UserData,
+        apscheduler: AsyncIOScheduler,
         album: Album | None = None,
 ) -> None:
     """
@@ -95,6 +112,28 @@ async def handle_incoming_message(
 
     # Send a confirmation message to the user
     text = manager.text_message.get("message_sent")
-    # Reply with a short-lived confirmation
     msg = await message.reply(text)
     Manager.schedule_message_cleanup(msg)
+
+    text_content = message.text or message.caption or ""
+    normalized = re.sub(r'[\W_]+', ' ', text_content.lower()).strip()
+    if user_data.ticket_status == "resolved" and normalized in GRATITUDE_PHRASES:
+        user_data.awaiting_reply = False
+        await redis.update_user(user_data.id, user_data)
+        return
+
+    user_data.ticket_status = "open"
+    user_data.awaiting_reply = True
+    user_data.last_user_message_at = datetime.now(timezone.utc).isoformat()
+    await redis.update_user(user_data.id, user_data)
+
+    schedule_support_reminder(
+        apscheduler,
+        bot_token=manager.config.bot.TOKEN,
+        group_id=manager.config.bot.GROUP_ID,
+        user_id=user_data.id,
+        message_thread_id=user_data.message_thread_id,
+        language_code=user_data.language_code,
+        redis_dsn=manager.config.redis.dsn(),
+    )
+
