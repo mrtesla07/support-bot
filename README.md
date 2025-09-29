@@ -77,7 +77,7 @@ You need your own server or you can rent one from a hosting provider. For this, 
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/nessshon/support-bot.git
+    git clone https://github.com/mrtesla07/support-bot.git
     ```
 
 2. Change into the bot directory:
