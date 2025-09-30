@@ -109,6 +109,13 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage, apsch
     await redis.update_user(user_data.id, user_data)
     cancel_support_reminder(apscheduler, user_data.id)
 
+    with suppress(TelegramBadRequest):
+        await message.bot.edit_forum_topic(
+            chat_id=message.chat.id,
+            message_thread_id=message.message_thread_id,
+            icon_custom_emoji_id=manager.config.bot.BOT_RESOLVED_EMOJI_ID,
+        )
+
     await message.reply(manager.text_message.get("ticket_resolved"))
 
 

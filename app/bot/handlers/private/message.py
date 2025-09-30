@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import re
+from contextlib import suppress
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
@@ -115,6 +116,8 @@ async def handle_incoming_message(
     msg = await message.reply(text)
     Manager.schedule_message_cleanup(msg)
 
+    ticket_was_resolved = user_data.ticket_status == "resolved"
+
     text_content = message.text or message.caption or ""
     normalized = re.sub(r'[\W_]+', ' ', text_content.lower()).strip()
     if user_data.ticket_status == "resolved" and normalized in GRATITUDE_PHRASES:
@@ -126,6 +129,14 @@ async def handle_incoming_message(
     user_data.awaiting_reply = True
     user_data.last_user_message_at = datetime.now(timezone.utc).isoformat()
     await redis.update_user(user_data.id, user_data)
+
+    if ticket_was_resolved and user_data.message_thread_id is not None:
+        with suppress(TelegramBadRequest):
+            await message.bot.edit_forum_topic(
+                chat_id=manager.config.bot.GROUP_ID,
+                message_thread_id=user_data.message_thread_id,
+                icon_custom_emoji_id=manager.config.bot.BOT_EMOJI_ID,
+            )
 
     schedule_support_reminder(
         apscheduler,

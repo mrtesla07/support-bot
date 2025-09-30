@@ -102,6 +102,7 @@
 | `BOT_DEV_ID`    | `int`| Telegram ID разработчика или администратора           | `123456789`          |
 | `BOT_GROUP_ID`  | `str`| ID группы, в которой работает бот                     | `-100123456789`      |
 | `BOT_EMOJI_ID`  | `str`| ID кастомного эмодзи для иконки темы                  | `5417915203100613993`|
+| `BOT_RESOLVED_EMOJI_ID` | `str`| Custom emoji ID used for the resolved topic icon | `0000000000000000000`|
 | `REDIS_HOST`    | `str`| Хост или IP сервера Redis                             | `redis`              |
 | `REDIS_PORT`    | `int`| Порт Redis                                            | `6379`               |
 | `REDIS_DB`      | `int`| Номер базы Redis                                      | `1`                  |

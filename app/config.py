@@ -13,11 +13,13 @@ class BotConfig:
     - DEV_ID (int): The developer's user ID.
     - GROUP_ID (int): The group chat ID.
     - BOT_EMOJI_ID (str): The custom emoji ID for the group's topic.
+    - BOT_RESOLVED_EMOJI_ID (str): The custom emoji ID used when a ticket is resolved.
     """
     TOKEN: str
     DEV_ID: int
     GROUP_ID: int
     BOT_EMOJI_ID: str
+    BOT_RESOLVED_EMOJI_ID: str
 
 
 @dataclass
@@ -71,6 +73,7 @@ def load_config() -> Config:
             DEV_ID=env.int("BOT_DEV_ID"),
             GROUP_ID=env.int("BOT_GROUP_ID"),
             BOT_EMOJI_ID=env.str("BOT_EMOJI_ID"),
+            BOT_RESOLVED_EMOJI_ID=env.str("BOT_RESOLVED_EMOJI_ID"),
         ),
         redis=RedisConfig(
             HOST=env.str("REDIS_HOST"),
