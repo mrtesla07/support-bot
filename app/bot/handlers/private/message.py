@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 import re
 from contextlib import suppress
@@ -131,12 +132,23 @@ async def handle_incoming_message(
     await redis.update_user(user_data.id, user_data)
 
     if ticket_was_resolved and user_data.message_thread_id is not None:
-        with suppress(TelegramBadRequest):
-            await message.bot.edit_forum_topic(
-                chat_id=manager.config.bot.GROUP_ID,
-                message_thread_id=user_data.message_thread_id,
-                icon_custom_emoji_id=manager.config.bot.BOT_EMOJI_ID,
-            )
+        thread_id = user_data.message_thread_id
+        group_id = manager.config.bot.GROUP_ID
+        bot = message.bot
+        icon_id = manager.config.bot.BOT_EMOJI_ID
+
+        async def restore_topic_icon(delay: float = 0.0) -> None:
+            if delay:
+                await asyncio.sleep(delay)
+            with suppress(TelegramBadRequest):
+                await bot.edit_forum_topic(
+                    chat_id=group_id,
+                    message_thread_id=thread_id,
+                    icon_custom_emoji_id=icon_id,
+                )
+
+        await restore_topic_icon()
+        asyncio.create_task(restore_topic_icon(1.0))
 
     schedule_support_reminder(
         apscheduler,
