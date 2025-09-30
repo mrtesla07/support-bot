@@ -56,7 +56,6 @@ async def send_support_reminder(
             await bot.session.close()
     finally:
         await redis.close()
-        await redis.wait_closed()
 
 
 def schedule_support_reminder(
