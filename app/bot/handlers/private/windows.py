@@ -4,6 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hbold
 
 from app.bot.manager import Manager
+from app.bot.utils.redis import SettingsStorage
 
 from aiogram.types import InlineKeyboardMarkup as Markup
 from aiogram.types import InlineKeyboardButton as Button
@@ -51,7 +52,14 @@ class Window:
         :param manager: Manager object.
         :return: None
         """
-        text = manager.text_message.get("main_menu")
+        language_code = manager.text_message.language_code
+        custom_text = None
+
+        settings: SettingsStorage | None = manager.middleware_data.get("settings")
+        if settings is not None:
+            custom_text = await settings.get_greeting(language_code)
+
+        text = custom_text or manager.text_message.get("main_menu")
         with suppress(IndexError, KeyError):
             text = text.format(full_name=hbold(manager.user.full_name))
         await manager.send_message(text)

@@ -4,7 +4,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, User, Chat
 from redis.asyncio import Redis
 
-from app.bot.utils.redis import RedisStorage
+from app.bot.utils.redis import RedisStorage, SettingsStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.texts import SUPPORTED_LANGUAGES
 
@@ -39,8 +39,9 @@ class RedisMiddleware(BaseMiddleware):
         :param data: Additional data.
         :return: The result of the handler function.
         """
-        # Create an instance of RedisStorage using the provided Redis instance
+        # Create storage helpers backed by Redis
         redis = RedisStorage(self.redis)
+        settings = SettingsStorage(self.redis)
 
         # Extract the chat and user objects from data
         chat: Chat = data.get("event_chat")
@@ -73,8 +74,9 @@ class RedisMiddleware(BaseMiddleware):
             # For group chats or if the user object is None, set user_data to None
             user_data = None
 
-        # Add redis and user_data to data for use in subsequent handlers
+        # Add redis, settings and user_data to data for use in subsequent handlers
         data["redis"] = redis
+        data["settings"] = settings
         data["user_data"] = user_data
 
         # Call the handler function with the event and data
