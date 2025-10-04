@@ -53,9 +53,11 @@ async def setup(bot: Bot, config: Config) -> None:
     admin_commands = {
         "en": commands["en"].copy() + [
             BotCommand(command="newsletter", description="Open the newsletter menu"),
+            BotCommand(command="greeting", description="Open the greeting settings"),
         ],
         "ru": commands["ru"].copy() + [
             BotCommand(command="newsletter", description="Меню рассылки"),
+            BotCommand(command="greeting", description="Настройки приветствия"),
         ],
     }
 
