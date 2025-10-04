@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+
 import re
 from contextlib import suppress
 
@@ -18,6 +19,8 @@ from app.bot.utils.create_forum_topic import (
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.reminders import schedule_support_reminder
+
+TOPIC_ICON_RESTORE_DELAY = 3.0
 
 GRATITUDE_PHRASES = {
     'спасибо',
@@ -137,9 +140,8 @@ async def handle_incoming_message(
         bot = message.bot
         icon_id = manager.config.bot.BOT_EMOJI_ID
 
-        async def restore_topic_icon(delay: float = 0.0) -> None:
-            if delay:
-                await asyncio.sleep(delay)
+        async def restore_topic_icon() -> None:
+            await asyncio.sleep(TOPIC_ICON_RESTORE_DELAY)
             with suppress(TelegramBadRequest):
                 await bot.edit_forum_topic(
                     chat_id=group_id,
@@ -147,8 +149,7 @@ async def handle_incoming_message(
                     icon_custom_emoji_id=icon_id,
                 )
 
-        await restore_topic_icon()
-        asyncio.create_task(restore_topic_icon(1.0))
+        asyncio.create_task(restore_topic_icon())
 
     schedule_support_reminder(
         apscheduler,
