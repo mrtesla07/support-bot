@@ -6,7 +6,7 @@
 [![Redis](https://img.shields.io/badge/Redis-enabled?logo=redis&color=red)](https://redis.io)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker)](https://www.docker.com/)
 
-Support Bot — телеграм‑бот для обработки обращений пользователей и проксирования диалогов в модуль поддержки.
+Support Bot - телеграм-бот для обработки обращений пользователей и проксирования диалогов в модуль поддержки.
 Бот работает в личных сообщениях, пересылая обращения в тематический топик форума группы и синхронизируя статусы через Redis.
 
 ## Возможности
@@ -15,11 +15,11 @@ Support Bot — телеграм‑бот для обработки обраще
 - передача сообщений и мультимедиа между пользователем и агентами поддержки;
 - автоматические напоминания агентам о необработанных диалогах;
 - встроенные команды модерации (/resolve, /silent, /ban, /information);
-- защита от вредоносных профилей: фильтры ссылок/инвайтов, авто‑бан и авто‑санитация отображаемых имён.
+- защита от вредоносных профилей: фильтры ссылок/инвайтов, авто-бан и авто-санитация отображаемых имён.
 
 ## Быстрый старт
 
-`ash
+```ash
 cp .env.example .env
 nano .env   # заполните токен бота и параметры Redis
 
@@ -29,7 +29,7 @@ python -m app
 
 ### Запуск в Docker
 
-`ash
+```ash
 docker compose up -d --build
 `
 
@@ -37,7 +37,7 @@ docker compose up -d --build
 
 При обновлении придерживайтесь последовательности:
 
-`ash
+```ash
 docker compose down
 git pull
 docker compose up -d --build
@@ -46,7 +46,7 @@ docker compose up -d --build
 Параметр --build пересоберёт образ и применит изменения из 
 equirements.txt. После перезапуска сможете посмотреть логи:
 
-`ash
+```ash
 docker compose logs -f bot
 `
 
@@ -62,9 +62,9 @@ docker compose logs -f bot
 
 | Имя                | Описание                                 |
 |--------------------|------------------------------------------|
-| BOT_TOKEN        | токен Telegram‑бота                      |
+| BOT_TOKEN        | токен Telegram-бота                      |
 | BOT_DEV_ID       | ID администратора                        |
-| BOT_GROUP_ID     | ID чата‑форума для поддержки             |
+| BOT_GROUP_ID     | ID чата-форума для поддержки             |
 | BOT_EMOJI_ID     | кастомная иконка для темы                |
 | BOT_RESOLVED_EMOJI_ID | иконка для закрытых тикетов        |
 | REDIS_HOST       | хост Redis                               |
@@ -73,7 +73,7 @@ docker compose logs -f bot
 
 ## Тестирование
 
-`ash
+```ash
 pytest
 `
 

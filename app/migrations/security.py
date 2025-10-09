@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import logging
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 from aiogram.exceptions import TelegramBadRequest
 
 from app.bot.utils.security import sanitize_display_name
 
-from .manager import MigrationContext
+if TYPE_CHECKING:
+    from .manager import MigrationContext
 
 logger = logging.getLogger(__name__)
 
 
-async def sanitize_existing_display_names(context: MigrationContext) -> None:
+async def sanitize_existing_display_names(context: "MigrationContext") -> None:
     user_ids = await context.storage.get_all_users_ids()
     if not user_ids:
         return
