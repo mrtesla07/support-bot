@@ -10,8 +10,7 @@
 
 Бот напомнит команде, если пользователю не ответили в течение 5 минут, и позволяет закрывать обсуждение командой `/resolve`.
 
-* Bot example: @nessshonSupportBot
-* Linked group example: @nessshonSupportGroup
+
 
 **О лимитах**:
 <blockquote>
@@ -123,9 +122,9 @@
 
 ## Донаты
 
-**TON** — `EQC-3ilVr-W0Uc3pLrGJElwSaFxvhXXfkiQA3EwdVBHNNess`
+**TON** — `UQBm7CuV93ZVRK7MiRHVFosSYOjnmonX_E-bEL8cpNe2_EA4`
 
-**USDT** (TRC-20) — `TDHMG7JRkmJBDD1qd4bNhdfoy2uzVd8ixA`
+**USDT** (TRC-20) — `TXta4rdPhWrMux5pz8dHW9YHJtZyzvuWTn`
 
 ## Как помочь проекту
 
