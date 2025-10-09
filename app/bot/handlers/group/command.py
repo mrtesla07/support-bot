@@ -1,16 +1,20 @@
 from contextlib import suppress
+import html
 
-from aiogram import Router, F
-from aiogram.exceptions import TelegramBadRequest
+from aiogram import F, Router
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from aiogram.filters import Command, MagicData
 from aiogram.types import Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.utils.markdown import hcode, hbold
 
 from app.bot.manager import Manager
-from app.bot.utils.redis import RedisStorage
+from app.bot.utils.language import resolve_language_code
+from app.bot.utils.redis import RedisStorage, SettingsStorage
+from app.bot.utils.redis.models import UserData
 from app.bot.utils.reminders import cancel_support_reminder
 from app.bot.utils.security import sanitize_display_name
+from app.bot.utils.texts import TextMessage
 
 router_id = Router()
 router_id.message.filter(
@@ -101,8 +105,25 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage) -> No
     await message.reply(text.format_map(format_data))
 
 
+async def _send_resolution_message(manager: Manager, settings: SettingsStorage, user_data: UserData) -> None:
+    language_code = resolve_language_code(user_data.language_code)
+    override = await settings.get_resolved_message(language_code)
+    template = override or TextMessage(language_code).get("ticket_resolved_user")
+    safe_name = sanitize_display_name(user_data.full_name, placeholder=f"User {user_data.id}")
+    escaped_name = html.escape(safe_name)
+    text = template.format(full_name=hbold(escaped_name))
+
+    with suppress(TelegramBadRequest, TelegramAPIError):
+        await manager.bot.send_message(
+            chat_id=user_data.id,
+            text=text,
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+
+
 @router.message(Command("resolve"))
-async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler) -> None:
+async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler, settings: SettingsStorage) -> None:
     user_data = await redis.get_by_message_thread_id(message.message_thread_id)
     if not user_data: return None  # noqa
 
@@ -117,6 +138,8 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage, apsch
             message_thread_id=message.message_thread_id,
             icon_custom_emoji_id=manager.config.bot.BOT_RESOLVED_EMOJI_ID,
         )
+
+    await _send_resolution_message(manager, settings, user_data)
 
     await message.reply(manager.text_message.get("ticket_resolved"))
 

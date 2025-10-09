@@ -93,6 +93,10 @@ class TextMessage(Text):
                     "<b>User {user} is waiting for a reply.</b>\nPlease check the conversation."
                 ),
                 "ticket_resolved": "<b>Ticket marked as resolved.</b>",
+                "ticket_resolved_user": (
+                    "<b>Thank you for reaching out!</b>\n"
+                    "Your ticket is now closed, but you can reply here if you need more help."
+                ),
             },
             "ru": {
                 "select_language": f"👋 <b>Привет</b>, {hbold('{full_name}')}!\n\nВыберите язык:",
@@ -158,5 +162,9 @@ class TextMessage(Text):
                     "<b>{user} ждёт ответа.</b>\nПроверьте, пожалуйста, тему."
                 ),
                 "ticket_resolved": "<b>Тикет отмечен как решённый.</b>",
+                "ticket_resolved_user": (
+                    "<b>Спасибо за обращение!</b>\n"
+                    "Тикет закрыт. Если помощь ещё нужна, просто ответьте в этом чате."
+                ),
             },
         }
