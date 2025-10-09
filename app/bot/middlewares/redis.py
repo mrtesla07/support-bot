@@ -4,9 +4,11 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, User, Chat
 from redis.asyncio import Redis
 
+from app.bot.utils.language import resolve_language_code
 from app.bot.utils.redis import RedisStorage, SettingsStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.texts import SUPPORTED_LANGUAGES
+from app.config import Config
 
 
 class RedisMiddleware(BaseMiddleware):
@@ -17,13 +19,16 @@ class RedisMiddleware(BaseMiddleware):
         redis (Redis): The Redis instance for data storage.
     """
 
-    def __init__(self, redis: Redis) -> None:
+    def __init__(self, redis: Redis, *, config: Config) -> None:
         """
         Initializes the RedisMiddleware instance.
 
         :param redis: The Redis instance for data storage.
         """
         self.redis = redis
+        self.config = config
+        self.default_language = resolve_language_code(config.bot.DEFAULT_LANGUAGE)
+        self.language_prompt_enabled = config.bot.LANGUAGE_PROMPT_ENABLED
 
     async def __call__(
             self,
@@ -65,8 +70,10 @@ class RedisMiddleware(BaseMiddleware):
                 user_data.username = f"@{user.username}" if user.username else "-"
 
             if len(SUPPORTED_LANGUAGES.keys()) == 1:
-                # If only one language is supported, set user language_code to the first language
                 user_data.language_code = list(SUPPORTED_LANGUAGES.keys())[0]
+
+            if not user_data.language_code:
+                user_data.language_code = self.default_language
 
             # Update user data in Redis
             await redis.update_user(user.id, user_data)

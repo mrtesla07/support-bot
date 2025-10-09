@@ -8,6 +8,7 @@ from app.bot.manager import Manager
 from app.bot.utils.create_forum_topic import get_or_create_forum_topic
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.redis.models import UserData
+from app.bot.utils.language import resolve_language_code
 
 router = Router()
 router.message.filter(F.chat.type == "private")
@@ -32,10 +33,20 @@ async def handler(
     :param user_data: UserData object.
     :return: None
     """
-    if user_data.language_code:
+    config = manager.config.bot
+
+    default_language = resolve_language_code(config.DEFAULT_LANGUAGE)
+
+    if not config.LANGUAGE_PROMPT_ENABLED:
+        if user_data.language_code != default_language:
+            user_data.language_code = default_language
+            await redis.update_user(user_data.id, user_data)
         await Window.main_menu(manager)
     else:
-        await Window.select_language(manager)
+        if user_data.language_code:
+            await Window.main_menu(manager)
+        else:
+            await Window.select_language(manager)
     await manager.delete_message(message)
 
     # Create the forum topic

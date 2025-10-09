@@ -19,7 +19,7 @@ def register_middlewares(dp: Dispatcher, **kwargs) -> None:
         None
     """
     # Register RedisMiddleware with the provided Redis instance
-    dp.update.outer_middleware.register(RedisMiddleware(kwargs["redis"]))
+    dp.update.outer_middleware.register(RedisMiddleware(kwargs["redis"], config=kwargs["config"]))
     # Register ManagerMiddleware
     dp.update.outer_middleware.register(ManagerMiddleware())
 
