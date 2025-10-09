@@ -64,16 +64,16 @@ docker compose up -d --build
 
 ## Переменные окружения
 
-| Имя                    | Описание                                         |
-|------------------------|--------------------------------------------------|
-| `BOT_TOKEN`            | токен, выданный [@BotFather](https://t.me/BotFather) |
-| `BOT_DEV_ID`           | Telegram ID администратора (доступ к /newsletter) |
-| `BOT_GROUP_ID`         | ID чат-форума, куда пересылаются обращения        |
-| `BOT_EMOJI_ID`         | кастомное эмодзи для активных тем                 |
-| `BOT_RESOLVED_EMOJI_ID`| эмодзи для решённых тикетов                       |
-| `REDIS_HOST`           | адрес Redis                                      |
-| `REDIS_PORT`           | порт Redis                                       |
-| `REDIS_DB`             | номер базы Redis                                 |
+| Имя                    | Описание                                              |
+|------------------------|--------------------------------------------------     |
+| `BOT_TOKEN`            | токен, выданный [@BotFather](https://t.me/BotFather)  |
+| `BOT_DEV_ID`           | Telegram ID администратора (доступ к /newsletter)     |
+| `BOT_GROUP_ID`         | ID чат-форума, куда пересылаются обращения            |
+| `BOT_EMOJI_ID`         | кастомное эмодзи для активных тем                     |
+| `BOT_RESOLVED_EMOJI_ID`| эмодзи для решённых тикетов                           |
+| `REDIS_HOST`           | адрес Redis                                           |
+| `REDIS_PORT`           | порт Redis                                            |
+| `REDIS_DB`             | номер базы Redis                                      |
 
 ## Тесты
 
