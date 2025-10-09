@@ -6,6 +6,7 @@ from aiogram.utils.markdown import hlink
 from app.bot.manager import Manager
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.redis.models import UserData
+from app.bot.utils.security import sanitize_display_name
 
 router = Router()
 router.my_chat_member.filter(F.chat.type == "private")
@@ -37,9 +38,10 @@ async def handle_chat_member_update(
         text = manager.text_message.get("user_stopped_bot")
 
     url = f"https://t.me/{user_data.username[1:]}" if user_data.username != "-" else f"tg://user?id={user_data.id}"
+    safe_name = sanitize_display_name(user_data.full_name, placeholder=f"User {user_data.id}")
 
     await update.bot.send_message(
         chat_id=manager.config.bot.GROUP_ID,
-        text=text.format(name=hlink(user_data.full_name, url)),
+        text=text.format(name=hlink(safe_name, url)),
         message_thread_id=user_data.message_thread_id,
     )

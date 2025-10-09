@@ -73,6 +73,16 @@ class TextMessage(Text):
                 ),
                 "message_not_sent": "<b>Message not sent!</b> An unexpected error occurred.",
                 "message_sent_to_user": "<b>Message sent to the user!</b>",
+                "auto_blocked_notice": (
+                    "<b>Message blocked.</b>\n"
+                    "Our safety filter detected suspicious data ({reason}).\n"
+                    "Please rename your profile and remove invite links before trying again."
+                ),
+                "auto_blocked_alert": (
+                    "<b>Automatic block triggered.</b>\n"
+                    "{user}\n"
+                    "Reason: {reason}"
+                ),
                 "silent_mode_enabled": (
                     "<b>Silent mode enabled!</b> Messages will not be forwarded to the user."
                 ),
@@ -128,6 +138,16 @@ class TextMessage(Text):
                 ),
                 "message_not_sent": "<b>Сообщение не отправлено!</b> Произошла непредвиденная ошибка.",
                 "message_sent_to_user": "<b>Сообщение отправлено пользователю!</b>",
+                "auto_blocked_notice": (
+                    "<b>Сообщение заблокировано.</b>\n"
+                    "Фильтр безопасности обнаружил подозрительные данные ({reason}).\n"
+                    "Уберите ссылки и сервисные маски и попробуйте снова."
+                ),
+                "auto_blocked_alert": (
+                    "<b>Включена авто-блокировка.</b>\n"
+                    "{user}\n"
+                    "Причина: {reason}"
+                ),
                 "silent_mode_enabled": (
                     "<b>Тихий режим включён!</b> Сообщения не будут пересылаться пользователю."
                 ),

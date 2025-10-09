@@ -8,6 +8,7 @@ from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import StateFilter
 from aiogram.types import Message
+from aiogram.utils.markdown import hlink
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.bot.manager import Manager
@@ -19,6 +20,7 @@ from app.bot.utils.create_forum_topic import (
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.reminders import schedule_support_reminder
+from app.bot.utils.security import analyze_user_message, sanitize_display_name
 
 TOPIC_ICON_RESTORE_DELAY = 3.0
 
@@ -78,6 +80,46 @@ async def handle_incoming_message(
     if user_data.is_banned:
         return
 
+    text_content = message.text or message.caption or ""
+
+    def entities_contain_links(msg: Message) -> bool:
+        for container in (msg.entities or [], msg.caption_entities or []):
+            for entity in container:
+                if entity.type in {"url", "text_link"}:
+                    return True
+        return False
+
+    suspicion = analyze_user_message(
+        full_name=user_data.full_name,
+        username=user_data.username,
+        message_text=text_content,
+        entities_contains_link=entities_contain_links(message),
+    )
+
+    if suspicion.should_block:
+        user_data.is_banned = True
+        user_data.awaiting_reply = False
+        await redis.update_user(user_data.id, user_data)
+
+        reason_text = "; ".join(suspicion.reasons())
+        await message.reply(
+            manager.text_message.get("auto_blocked_notice").format(reason=reason_text),
+        )
+
+        thread_id = user_data.message_thread_id
+        group_kwargs = {"message_thread_id": thread_id} if thread_id is not None else {}
+        safe_name = sanitize_display_name(user_data.full_name, placeholder=f"User {user_data.id}")
+        await message.bot.send_message(
+            chat_id=manager.config.bot.GROUP_ID,
+            text=manager.text_message.get("auto_blocked_alert").format(
+                user=hlink(safe_name, f"tg://user?id={user_data.id}"),
+                reason=reason_text,
+            ),
+            disable_web_page_preview=True,
+            **group_kwargs,
+        )
+        return
+
     async def copy_message_to_topic():
         """
         Copies the message or album to the forum topic.
@@ -122,7 +164,6 @@ async def handle_incoming_message(
 
     ticket_was_resolved = user_data.ticket_status == "resolved"
 
-    text_content = message.text or message.caption or ""
     normalized = re.sub(r'[\W_]+', ' ', text_content.lower()).strip()
     if user_data.ticket_status == "resolved" and normalized in GRATITUDE_PHRASES:
         user_data.awaiting_reply = False

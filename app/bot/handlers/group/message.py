@@ -12,6 +12,7 @@ from app.bot.manager import Manager
 from app.bot.types.album import Album
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.reminders import cancel_support_reminder
+from app.bot.utils.security import sanitize_display_name
 
 router = Router()
 router.message.filter(
@@ -32,10 +33,11 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage) -> No
 
     # Get the appropriate text based on the user's state
     text = manager.text_message.get("user_started_bot")
+    safe_name = sanitize_display_name(user_data.full_name, placeholder=f"User {user_data.id}")
 
     message = await message.bot.send_message(
         chat_id=manager.config.bot.GROUP_ID,
-        text=text.format(name=hlink(user_data.full_name, url)),
+        text=text.format(name=hlink(safe_name, url)),
         message_thread_id=user_data.message_thread_id
     )
 

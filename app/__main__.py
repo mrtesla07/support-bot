@@ -12,6 +12,7 @@ from .bot.handlers import include_routers
 from .bot.middlewares import register_middlewares
 from .config import load_config, Config
 from .logger import setup_logger
+from .migrations import run_migrations
 
 
 async def on_shutdown(
@@ -102,6 +103,9 @@ async def main() -> None:
     register_middlewares(
         dp, config=config, redis=storage.redis, apscheduler=apscheduler
     )
+
+    # Apply pending migrations before starting polling
+    await run_migrations(config=config, bot=bot, redis=storage.redis)
 
     # Start the bot
     await bot.delete_webhook()

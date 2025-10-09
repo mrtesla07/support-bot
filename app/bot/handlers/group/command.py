@@ -10,6 +10,7 @@ from aiogram.utils.markdown import hcode, hbold
 from app.bot.manager import Manager
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.reminders import cancel_support_reminder
+from app.bot.utils.security import sanitize_display_name
 
 router_id = Router()
 router_id.message.filter(
@@ -93,7 +94,8 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage) -> No
     if not user_data: return None  # noqa
 
     format_data = user_data.to_dict()
-    format_data["full_name"] = hbold(format_data["full_name"])
+    safe_name = sanitize_display_name(format_data["full_name"], placeholder=f"User {user_data.id}")
+    format_data["full_name"] = hbold(safe_name)
     text = manager.text_message.get("user_information")
     # Reply with formatted user information
     await message.reply(text.format_map(format_data))

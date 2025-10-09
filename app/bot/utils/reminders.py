@@ -11,6 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from redis.asyncio import Redis as AsyncRedis
 
 from app.bot.utils.redis import RedisStorage
+from app.bot.utils.security import sanitize_display_name
 from app.bot.utils.texts import TextMessage
 
 REMINDER_DELAY_SECONDS = 5 * 60
@@ -39,7 +40,8 @@ async def send_support_reminder(
 
         language = language_code or user_data.language_code or "en"
         text_template = TextMessage(language).get("support_reminder")
-        user_link = hlink(user_data.full_name, f"tg://user?id={user_data.id}")
+        safe_name = sanitize_display_name(user_data.full_name, placeholder=f"User {user_data.id}")
+        user_link = hlink(safe_name, f"tg://user?id={user_data.id}")
         text = text_template.format(user=user_link)
 
         bot = Bot(
