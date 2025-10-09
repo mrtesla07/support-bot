@@ -13,6 +13,8 @@ COMPOSE_DIR="${INSTALL_DIR}"
 # Укажите URL «сырой» версии ЭТОГО скрипта для самообновления (например, GitHub Raw/Gist Raw).
 # Пример: UPDATE_URL="https://raw.githubusercontent.com/you/yourrepo/main/s-b"
 UPDATE_URL="https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/s-b.sh"
+
+SCRIPT_SOURCE="${BASH_SOURCE[0]:-}"
 # =============================================================
 
 # ---------- helpers ----------
@@ -34,11 +36,40 @@ sha256() { command -v sha256sum >/dev/null 2>&1 && sha256sum "$1" | awk '{print 
 # ---------- self install to PATH ----------
 self_install() {
   local target="/usr/local/bin/${BIN_NAME}"
-  if [[ "$0" != "${target}" ]]; then
-    log "Устанавливаю ${BIN_NAME} в ${target}"
-    $SUDO install -m 0755 -D "$0" "${target}"
-    ok "Установлено. Теперь можно вызывать: ${BIN_NAME}"
+  local source_path=""
+
+  if [[ -n "${SCRIPT_SOURCE}" && "${SCRIPT_SOURCE}" != "bash" && -e "${SCRIPT_SOURCE}" ]]; then
+    if [[ "${SCRIPT_SOURCE}" = /* ]]; then
+      source_path="${SCRIPT_SOURCE}"
+    else
+      source_path="$(pwd)/${SCRIPT_SOURCE}"
+    fi
   fi
+
+  if [[ "${target}" == "${source_path}" ]]; then
+    return 0
+  fi
+
+  log "Устанавливаю ${BIN_NAME} в ${target}"
+
+  if [[ -n "${source_path}" && -r "${source_path}" ]]; then
+    $SUDO install -m 0755 -D "${source_path}" "${target}"
+  elif [[ -n "${UPDATE_URL}" ]]; then
+    local tmp; tmp="$(mktemp)"
+    if curl -fsSL "${UPDATE_URL}" -o "${tmp}"; then
+      $SUDO install -m 0755 -D "${tmp}" "${target}"
+    else
+      rm -f "${tmp}"
+      err "Не удалось скачать скрипт по UPDATE_URL для установки."
+      exit 1
+    fi
+    rm -f "${tmp}"
+  else
+    err "Нет локального файла и UPDATE_URL — не могу установить ${BIN_NAME}."
+    exit 1
+  fi
+
+  ok "Установлено. Теперь можно вызывать: ${BIN_NAME}"
 }
 
 # ---------- Ubuntu-only detection ----------

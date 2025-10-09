@@ -50,7 +50,9 @@ class TextMessage(Text):
                     "- /silent\n"
                     "  Toggle silent mode. When enabled, replies are not sent to the user.\n\n"
                     "- /information\n"
-                    "  Show a brief summary about the user."
+                    "  Show a brief summary about the user.\n\n"
+                    "- /resolve\n"
+                    "  Mark the ticket as resolved and update the topic emoji."
                 ),
                 "user_restarted_bot": f"User {hbold('{name}')} restarted the bot!",
                 "user_stopped_bot": f"User {hbold('{name}')} stopped the bot!",
@@ -119,7 +121,9 @@ class TextMessage(Text):
                     "- /silent\n"
                     "  Включить или выключить тихий режим. В тихом режиме ответы не отправляются пользователю.\n\n"
                     "- /information\n"
-                    "  Показать краткую информацию о пользователе."
+                    "  Показать краткую информацию о пользователе.\n\n"
+                    "- /resolve\n"
+                    "  Отметить тикет решённым и сменить эмодзи темы."
                 ),
                 "user_restarted_bot": f"Пользователь {hbold('{name}')} перезапустил бота!",
                 "user_stopped_bot": f"Пользователь {hbold('{name}')} остановил бота!",
