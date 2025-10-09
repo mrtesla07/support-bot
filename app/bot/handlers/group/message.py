@@ -10,9 +10,11 @@ from aiogram.utils.markdown import hlink
 
 from app.bot.manager import Manager
 from app.bot.types.album import Album
+from app.bot.utils.language import resolve_language_code
 from app.bot.utils.redis import RedisStorage
 from app.bot.utils.reminders import cancel_support_reminder
 from app.bot.utils.security import sanitize_display_name
+from app.bot.utils.texts import TextMessage
 
 router = Router()
 router.message.filter(
@@ -32,7 +34,8 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage) -> No
     url = f"https://t.me/{user_data.username[1:]}" if user_data.username != "-" else f"tg://user?id={user_data.id}"
 
     # Get the appropriate text based on the user's state
-    text = manager.text_message.get("user_started_bot")
+    topic_language = resolve_language_code(user_data.language_code or manager.config.bot.DEFAULT_LANGUAGE)
+    text = TextMessage(topic_language).get("user_started_bot")
     safe_name = sanitize_display_name(user_data.full_name, placeholder=f"User {user_data.id}")
 
     message = await message.bot.send_message(
