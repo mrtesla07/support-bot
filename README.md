@@ -90,7 +90,7 @@ pytest
 
 Для развёртывания на чистом сервере есть скрипт `scripts/s-b.sh`. Он:
 - ставит Docker (Ubuntu или через официальный `get.docker.com`);
-- клонирует/обновляет `support-bot` в `/opt/support-bot`;
+- клонирует/обновляет `support-bot` в выбранный каталог (по умолчанию `/opt/support-bot`);
 - копирует `.env.example`, позволяет задать `BOT_TOKEN`, `BOT_DEV_ID`, `BOT_GROUP_ID`, `BOT_DEFAULT_LANGUAGE`, `BOT_LANGUAGE_PROMPT_ENABLED` и запускает `docker compose up -d --build`;
 - поддерживает меню с операциями `up/down/logs/pull`, self-update из репозитория.
 
@@ -101,7 +101,7 @@ curl -fsSL https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/
   | bash
 ```
 
-Скрипт автоматически копирует себя в `/usr/local/bin/s-b`, поэтому после первого запуска можно просто набрать `s-b` из любого каталога и открыть меню (установка, обновление, пересоздание `.env`, перезапуск и т.д.).
+Скрипт при старте спрашивает каталог установки (Enter — оставить `/opt/support-bot`) и автоматически копирует себя в `/usr/local/bin/s-b`, поэтому после первого запуска можно просто набрать `s-b` из любого каталога и открыть меню (установка, обновление, пересоздание `.env`, перезапуск и т.д.).
 
 ## Технологии
 

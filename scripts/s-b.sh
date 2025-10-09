@@ -4,17 +4,57 @@ set -euo pipefail
 # =========================== CONFIG ===========================
 APP_NAME="support-bot"
 BIN_NAME="s-b"
-INSTALL_DIR="/opt/${APP_NAME}"
+DEFAULT_INSTALL_DIR="/opt/${APP_NAME}"
+INSTALL_DIR="${INSTALL_DIR:-${DEFAULT_INSTALL_DIR}}"
 REPO_URL="https://github.com/mrtesla07/support-bot.git"
-ENV_FILE="${INSTALL_DIR}/.env"
-EXAMPLE_FILE="${INSTALL_DIR}/.env.example"
-COMPOSE_DIR="${INSTALL_DIR}"
+ENV_FILE=""
+EXAMPLE_FILE=""
+COMPOSE_DIR=""
 
 # Укажите URL «сырой» версии ЭТОГО скрипта для самообновления (например, GitHub Raw/Gist Raw).
 # Пример: UPDATE_URL="https://raw.githubusercontent.com/you/yourrepo/main/s-b"
 UPDATE_URL="https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/s-b.sh"
 
 SCRIPT_SOURCE="${BASH_SOURCE[0]:-}"
+
+update_paths() {
+  INSTALL_DIR="${INSTALL_DIR%/}"
+  [[ -z "${INSTALL_DIR}" ]] && INSTALL_DIR="${DEFAULT_INSTALL_DIR}"
+  ENV_FILE="${INSTALL_DIR}/.env"
+  EXAMPLE_FILE="${INSTALL_DIR}/.env.example"
+  COMPOSE_DIR="${INSTALL_DIR}"
+}
+
+normalize_install_dir() {
+  # Expand ~ if present
+  if [[ "${INSTALL_DIR}" == ~* ]]; then
+    INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
+  fi
+  update_paths
+}
+
+prompt_install_dir() {
+  normalize_install_dir
+  echo
+  read -r -p "Каталог установки [${INSTALL_DIR}]: " in_dir || true
+  if [[ -n "${in_dir:-}" ]]; then
+    INSTALL_DIR="${in_dir%/}"
+    normalize_install_dir
+  fi
+  if [[ ! -d "${INSTALL_DIR}" ]]; then
+    warn "Каталог ${INSTALL_DIR} пока не существует — будет создан при установке."
+  fi
+}
+
+update_paths
+
+require_compose_dir() {
+  if [[ ! -d "${COMPOSE_DIR}" ]]; then
+    warn "Каталог ${COMPOSE_DIR} не найден. Сначала выполните установку (пункты 1 или 3)."
+    return 1
+  fi
+  return 0
+}
 # =============================================================
 
 # ---------- helpers ----------
@@ -243,29 +283,34 @@ write_env_from_example() {
 }
 
 compose_up() {
+  require_compose_dir || return 1
   decide_docker_prefix
   (cd "${COMPOSE_DIR}" && ${DOCKER_PREFIX} docker compose up -d --build)
   ok "Контейнеры запущены (detached)."
 }
 
 compose_down() {
+  require_compose_dir || return 1
   decide_docker_prefix
   (cd "${COMPOSE_DIR}" && ${DOCKER_PREFIX} docker compose down)
   ok "Контейнеры остановлены и удалены."
 }
 
 compose_restart() {
+  require_compose_dir || return 1
   decide_docker_prefix
   (cd "${COMPOSE_DIR}" && ${DOCKER_PREFIX} docker compose restart)
   ok "Контейнеры перезапущены."
 }
 
 compose_logs() {
+  require_compose_dir || return 1
   decide_docker_prefix
   (cd "${COMPOSE_DIR}" && ${DOCKER_PREFIX} docker compose logs -f)
 }
 
 compose_ps() {
+  require_compose_dir || return 1
   decide_docker_prefix
   (cd "${COMPOSE_DIR}" && ${DOCKER_PREFIX} docker compose ps)
 }
@@ -355,8 +400,9 @@ self_update_now() {
 
 # ---------- Menu ----------
 print_menu() {
-  cat <<'MENU'
+  cat <<MENU
 ================= Меню установки/управления =================
+Текущий каталог установки: ${INSTALL_DIR}
 1) Быстрая установка (Docker + бот)
 2) Установить Docker (Ubuntu) / fallback (get.docker.com)
 3) Установить/обновить бота (клонировать/обновить репозиторий)
@@ -416,6 +462,7 @@ menu_loop() {
 
 # ---------- Entry ----------
 main() {
+  prompt_install_dir
   self_install
   menu_loop
 }
