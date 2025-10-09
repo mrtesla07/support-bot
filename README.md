@@ -86,6 +86,23 @@ docker compose up -d --build
 pytest
 ```
 
+## Автоустановка
+
+Для развёртывания на чистом сервере есть скрипт `scripts/s-b.sh`. Он:
+- ставит Docker (Ubuntu или через официальный `get.docker.com`);
+- клонирует/обновляет `support-bot` в `/opt/support-bot`;
+- копирует `.env.example`, позволяет задать `BOT_TOKEN`, `BOT_DEV_ID`, `BOT_GROUP_ID`, `BOT_DEFAULT_LANGUAGE`, `BOT_LANGUAGE_PROMPT_ENABLED` и запускает `docker compose up -d --build`;
+- поддерживает меню с операциями `up/down/logs/pull`, self-update из репозитория.
+
+### Как использовать
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/s-b.sh \
+  | bash
+```
+
+Скрипт из коробки ставит себя в `/usr/local/bin/s-b`. Повторный запуск покажет меню с действиями (установка, обновление, пересоздание `.env`, перезапуск и т.д.).
+
 ## Технологии
 
 - Python 3.12, [aiogram](https://docs.aiogram.dev) 3.x;
