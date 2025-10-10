@@ -4,7 +4,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hbold
 
 from app.bot.manager import Manager
-from app.bot.utils.redis import SettingsStorage
+from app.bot.utils.create_forum_topic import get_or_create_forum_topic
+from app.bot.utils.redis import SettingsStorage, RedisStorage
+from app.bot.utils.redis.models import UserData
 
 from aiogram.types import InlineKeyboardMarkup as Markup
 from aiogram.types import InlineKeyboardButton as Button
@@ -64,6 +66,11 @@ class Window:
             text = text.format(full_name=hbold(manager.user.full_name))
         await manager.send_message(text)
         await manager.state.set_state(None)
+
+        redis: RedisStorage | None = manager.middleware_data.get("redis")
+        user_data: UserData | None = manager.middleware_data.get("user_data")
+        if redis is not None and user_data is not None:
+            await get_or_create_forum_topic(manager.bot, redis, manager.config, user_data)
 
     @staticmethod
     async def change_language(manager: Manager) -> None:
