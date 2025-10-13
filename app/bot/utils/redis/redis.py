@@ -105,3 +105,19 @@ class RedisStorage:
         async with self.redis.client() as client:
             user_ids = await client.hkeys(self.NAME)
             return [int(user_id) for user_id in user_ids]
+    
+    async def get_banned_users(self) -> list[UserData]:
+        """
+        Retrieves all banned users.
+        
+        :return: A list of banned UserData objects.
+        """
+        all_user_ids = await self.get_all_users_ids()
+        banned_users = []
+        
+        for user_id in all_user_ids:
+            user_data = await self.get_user(user_id)
+            if user_data and user_data.is_banned:
+                banned_users.append(user_data)
+        
+        return banned_users

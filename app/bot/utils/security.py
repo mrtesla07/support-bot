@@ -192,6 +192,7 @@ def analyze_user_message(
         normalized = normalize_text(value)
         collapsed = collapse_text(normalized)
 
+        # Проверяем только t.me и связанные паттерны, остальные URL разрешены
         _check_patterns(normalized, INVITE_PATTERNS, bucket=high, source=source)
         _append_if(bool(OBF_TME_PATTERN.search(normalized)), "обфускация t.me", high, source)
         _append_if(bool(OBF_TELEGRAM_PATTERN.search(normalized)), "обфускация telegram", high, source)
@@ -199,8 +200,9 @@ def analyze_user_message(
         if GENERIC_TME_PATTERN.search(normalized):
             high.append(f"{source}: ссылка на t.me")
 
-        if allow_url_medium and URL_PATTERN.search(value):
-            medium.append(f"{source}: содержит общий URL")
+        # Убираем проверку общих URL, так как теперь разрешены все ссылки кроме t.me
+        # if allow_url_medium and URL_PATTERN.search(value):
+        #     medium.append(f"{source}: содержит общий URL")
 
         if source in {"username", "full_name"}:
             _check_keywords(collapsed, SERVICE_KEYWORDS, bucket=high, source=source, severity="high")

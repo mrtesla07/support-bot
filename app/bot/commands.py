@@ -52,11 +52,15 @@ async def setup(bot: Bot, config: Config) -> None:
 
     admin_commands = {
         "en": commands["en"].copy() + [
+            BotCommand(command="banned", description="Show banned users"),
+            BotCommand(command="unban", description="Unban a user"),
             BotCommand(command="newsletter", description="Open the newsletter menu"),
             BotCommand(command="greeting", description="Open the greeting settings"),
             BotCommand(command="closing", description="Configure closing message"),
         ],
         "ru": commands["ru"].copy() + [
+            BotCommand(command="banned", description="Показать забаненных пользователей"),
+            BotCommand(command="unban", description="Разбанить пользователя"),
             BotCommand(command="newsletter", description="Меню рассылки"),
             BotCommand(command="greeting", description="Настройки приветствия"),
             BotCommand(command="closing", description="Настроить сообщение после закрытия"),
