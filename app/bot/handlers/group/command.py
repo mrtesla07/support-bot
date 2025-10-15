@@ -122,8 +122,31 @@ async def _send_resolution_message(manager: Manager, settings: SettingsStorage, 
         )
 
 
-@router.message(Command("resolve"))
-async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler, settings: SettingsStorage) -> None:
+def _is_no_message_resolve_command(message: Message) -> bool:
+    command_source = message.text or message.caption
+    if not command_source:
+        return False
+
+    command_part = command_source.split(maxsplit=1)[0]
+    if not command_part.startswith("/"):
+        return False
+
+    command_body = command_part[1:]
+    if "@" in command_body:
+        command_body = command_body.split("@", 1)[0]
+
+    return command_body.lower() == "resolve-nm"
+
+
+async def _resolve_ticket(
+    message: Message,
+    manager: Manager,
+    redis: RedisStorage,
+    apscheduler: AsyncIOScheduler,
+    settings: SettingsStorage,
+    *,
+    notify_user: bool,
+) -> None:
     user_data = await redis.get_by_message_thread_id(message.message_thread_id)
     if not user_data: return None  # noqa
 
@@ -139,9 +162,23 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage, apsch
             icon_custom_emoji_id=manager.config.bot.BOT_RESOLVED_EMOJI_ID,
         )
 
-    await _send_resolution_message(manager, settings, user_data)
+    if notify_user:
+        await _send_resolution_message(manager, settings, user_data)
 
     await message.reply(manager.text_message.get("ticket_resolved"))
+
+
+@router.message(Command("resolve"))
+async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler, settings: SettingsStorage) -> None:
+    notify_user = not _is_no_message_resolve_command(message)
+    await _resolve_ticket(
+        message,
+        manager,
+        redis,
+        apscheduler,
+        settings,
+        notify_user=notify_user,
+    )
 
 
 @router.message(Command(commands=["ban"]))
