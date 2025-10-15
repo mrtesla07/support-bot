@@ -122,22 +122,6 @@ async def _send_resolution_message(manager: Manager, settings: SettingsStorage, 
         )
 
 
-def _is_no_message_resolve_command(message: Message) -> bool:
-    command_source = message.text or message.caption
-    if not command_source:
-        return False
-
-    command_part = command_source.split(maxsplit=1)[0]
-    if not command_part.startswith("/"):
-        return False
-
-    command_body = command_part[1:]
-    if "@" in command_body:
-        command_body = command_body.split("@", 1)[0]
-
-    return command_body.lower() == "resolve-nm"
-
-
 async def _resolve_ticket(
     message: Message,
     manager: Manager,
@@ -170,14 +154,25 @@ async def _resolve_ticket(
 
 @router.message(Command("resolve"))
 async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler, settings: SettingsStorage) -> None:
-    notify_user = not _is_no_message_resolve_command(message)
     await _resolve_ticket(
         message,
         manager,
         redis,
         apscheduler,
         settings,
-        notify_user=notify_user,
+        notify_user=True,
+    )
+
+
+@router.message(Command("resolvequiet"))
+async def handler(message: Message, manager: Manager, redis: RedisStorage, apscheduler: AsyncIOScheduler, settings: SettingsStorage) -> None:
+    await _resolve_ticket(
+        message,
+        manager,
+        redis,
+        apscheduler,
+        settings,
+        notify_user=False,
     )
 
 

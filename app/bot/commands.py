@@ -41,12 +41,14 @@ async def setup(bot: Bot, config: Config) -> None:
             BotCommand(command="silent", description="Toggle silent mode"),
             BotCommand(command="information", description="Show user information"),
             BotCommand(command="resolve", description="Mark ticket as resolved"),
+            BotCommand(command="resolvequiet", description="Resolve ticket without user message"),
         ],
         "ru": [
             BotCommand(command="ban", description="Заблокировать/разблокировать пользователя"),
             BotCommand(command="silent", description="Включить/выключить тихий режим"),
             BotCommand(command="information", description="Показать информацию о пользователе"),
             BotCommand(command="resolve", description="Отметить тикет решённым"),
+            BotCommand(command="resolvequiet", description="Закрыть тикет без сообщения пользователю"),
         ],
     }
 
