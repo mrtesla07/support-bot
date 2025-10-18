@@ -6,6 +6,8 @@
 [![Redis](https://img.shields.io/badge/Redis-enabled?logo=redis&color=red)](https://redis.io)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker)](https://www.docker.com/)
 
+Все предложения и пожелания можете присылать сюда https://t.me/FederikoFellinni
+
 Support Bot — телеграм-бот для поддержки пользователей. Он принимает обращения в личных сообщениях, продублирует их в форуме рабочей группы и синхронизирует состояние (тикеты, статусы, напоминания) через Redis.
 
 ## Возможности
