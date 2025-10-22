@@ -235,11 +235,13 @@ prompt_overrides() {
   read -r -p "BOT_GROUP_ID (оставьте пустым, чтобы не менять): " in_group || true
   read -r -p "BOT_DEFAULT_LANGUAGE (например en, ru; пусто = оставить): " in_lang || true
   read -r -p "BOT_LANGUAGE_PROMPT_ENABLED (true/false/yes/no; пусто = оставить): " in_prompt || true
+  read -r -p "BOT_REMINDERS_ENABLED (true/false/yes/no; пусто = оставить): " in_reminders || true
   OV_BOT_TOKEN="${in_token:-}"
   OV_DEV_ID="${in_dev:-}"
   OV_GROUP_ID="${in_group:-}"
   OV_DEFAULT_LANGUAGE="${in_lang:-}"
   OV_LANGUAGE_PROMPT=""
+  OV_REMINDERS_ENABLED=""
   if [[ -n "${in_prompt:-}" ]]; then
     case "${in_prompt,,}" in
       y|yes|1)    OV_LANGUAGE_PROMPT="true" ;;
@@ -248,6 +250,17 @@ prompt_overrides() {
       *)
         warn "Не удалось распознать значение BOT_LANGUAGE_PROMPT_ENABLED, сохраню как введено."
         OV_LANGUAGE_PROMPT="${in_prompt}"
+        ;;
+    esac
+  fi
+  if [[ -n "${in_reminders:-}" ]]; then
+    case "${in_reminders,,}" in
+      y|yes|1)    OV_REMINDERS_ENABLED="true" ;;
+      n|no|0)     OV_REMINDERS_ENABLED="false" ;;
+      true|false) OV_REMINDERS_ENABLED="${in_reminders,,}" ;;
+      *)
+        warn "Не удалось распознать значение BOT_REMINDERS_ENABLED, сохраню как введено."
+        OV_REMINDERS_ENABLED="${in_reminders}"
         ;;
     esac
   fi
@@ -279,6 +292,7 @@ write_env_from_example() {
   [[ -n "${OV_GROUP_ID}"  ]] && safe_replace "BOT_GROUP_ID" "${OV_GROUP_ID}"  "${ENV_FILE}"
   [[ -n "${OV_DEFAULT_LANGUAGE}" ]] && safe_replace "BOT_DEFAULT_LANGUAGE" "${OV_DEFAULT_LANGUAGE}" "${ENV_FILE}"
   [[ -n "${OV_LANGUAGE_PROMPT}"  ]] && safe_replace "BOT_LANGUAGE_PROMPT_ENABLED" "${OV_LANGUAGE_PROMPT}" "${ENV_FILE}"
+  [[ -n ""  ]] && safe_replace "BOT_REMINDERS_ENABLED" "" ""
   ok ".env создан из .env.example и обновлён выбранными параметрами."
 }
 

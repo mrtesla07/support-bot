@@ -192,13 +192,14 @@ async def handle_incoming_message(
 
         asyncio.create_task(restore_topic_icon())
 
-    schedule_support_reminder(
-        apscheduler,
-        bot_token=manager.config.bot.TOKEN,
-        group_id=manager.config.bot.GROUP_ID,
-        user_id=user_data.id,
-        message_thread_id=user_data.message_thread_id,
-        language_code=user_data.language_code,
-        redis_dsn=manager.config.redis.dsn(),
-    )
+    if manager.config.bot.REMINDERS_ENABLED:
+        schedule_support_reminder(
+            apscheduler,
+            bot_token=manager.config.bot.TOKEN,
+            group_id=manager.config.bot.GROUP_ID,
+            user_id=user_data.id,
+            message_thread_id=user_data.message_thread_id,
+            language_code=user_data.language_code,
+            redis_dsn=manager.config.redis.dsn(),
+        )
 

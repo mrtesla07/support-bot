@@ -22,6 +22,7 @@ class BotConfig:
     BOT_RESOLVED_EMOJI_ID: str
     DEFAULT_LANGUAGE: str
     LANGUAGE_PROMPT_ENABLED: bool
+    REMINDERS_ENABLED: bool
 
 
 @dataclass
@@ -78,6 +79,7 @@ def load_config() -> Config:
             BOT_RESOLVED_EMOJI_ID=env.str("BOT_RESOLVED_EMOJI_ID"),
             DEFAULT_LANGUAGE=env.str("BOT_DEFAULT_LANGUAGE", default="en"),
             LANGUAGE_PROMPT_ENABLED=env.bool("BOT_LANGUAGE_PROMPT_ENABLED", default=True),
+            REMINDERS_ENABLED=env.bool("BOT_REMINDERS_ENABLED", default=True),
         ),
         redis=RedisConfig(
             HOST=env.str("REDIS_HOST"),
