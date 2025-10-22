@@ -200,9 +200,8 @@ def analyze_user_message(
         if GENERIC_TME_PATTERN.search(normalized):
             high.append(f"{source}: ссылка на t.me")
 
-        # Убираем проверку общих URL, так как теперь разрешены все ссылки кроме t.me
-        # if allow_url_medium and URL_PATTERN.search(value):
-        #     medium.append(f"{source}: содержит общий URL")
+        if allow_url_medium and URL_PATTERN.search(value):
+            medium.append(f"{source}: содержит общий URL")
 
         if source in {"username", "full_name"}:
             _check_keywords(collapsed, SERVICE_KEYWORDS, bucket=high, source=source, severity="high")
