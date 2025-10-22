@@ -31,9 +31,8 @@ def test_generic_url_does_not_block_single_medium() -> None:
         username="@alice",
         message_text="Проверьте https://example.com",
     )
-    assert result.triggered
+    assert not result.triggered
     assert not result.should_block
-    assert result.medium
 
 
 def test_display_name_with_at_symbol_counts_as_medium() -> None:

@@ -201,7 +201,7 @@ def analyze_user_message(
             high.append(f"{source}: ссылка на t.me")
 
         if allow_url_medium and URL_PATTERN.search(value):
-            medium.append(f"{source}: содержит общий URL")
+            pass
 
         if source in {"username", "full_name"}:
             _check_keywords(collapsed, SERVICE_KEYWORDS, bucket=high, source=source, severity="high")
