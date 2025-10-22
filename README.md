@@ -78,12 +78,10 @@ docker compose up -d --build
 | `BOT_DEFAULT_LANGUAGE` | код языка по умолчанию (`en`, `ru`, и т.п.)           |
 | `BOT_LANGUAGE_PROMPT_ENABLED` | `true/false`, показывать ли окно выбора языка  |
 | `REDIS_HOST`           | адрес Redis                                           |
-| `BOT_REMINDERS_ENABLED` | `true/false`, ???????? ?? ??????????? ? ???  |
 | `REDIS_PORT`           | порт Redis                                            |
 | `REDIS_DB`             | номер базы Redis                                      |
 
 Если выбор языка не нужен, задайте `BOT_DEFAULT_LANGUAGE` и отключите шаг выбора, выставив `BOT_LANGUAGE_PROMPT_ENABLED=false`. Тогда пользователь сразу открывает главное меню на выбранном языке.
-???? ??????????? ? ?????? ?? ?????, ?????????? BOT_REMINDERS_ENABLED=false ? ??? ?????????? ??????????? ????????? ? ???????????? ???????.
 
 ## Тесты
 
@@ -118,6 +116,9 @@ curl -fsSL https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/
 - при резервном копировании (scripts/redis_backup.py) передавайте нужные переменные окружения, чтобы файл содержал данные конкретного бота.
 
 Так код остаётся общим, а конфигурация и хранилище изолированы для каждого проекта.
+
+
+
 
 ## Резервные копии
 
