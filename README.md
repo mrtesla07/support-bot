@@ -106,6 +106,23 @@ curl -fsSL https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/
 
 Скрипт при старте спрашивает каталог установки (Enter — оставить `/opt/support-bot`) и автоматически копирует себя в `/usr/local/bin/s-b`, поэтому после первого запуска можно просто набрать `s-b` из любого каталога и открыть меню (установка, обновление, пересоздание `.env`, перезапуск и т.д.).
 
+## Резервные копии
+
+Для экспорта/импорта данных Redis предусмотрен скрипт `scripts/redis_backup.py`. Он сохраняет:
+- hash `users` (весь профиль пользователя, статус тикета, silent-mode, язык и т.п.);
+- hash `settings` (кастомные приветствия и сообщения закрытия);
+- индексы `users_index_*` (связь ID темы ↔ ID пользователя).
+
+```bash
+# Сделать бэкап в файл backup-$(date).json
+python scripts/redis_backup.py backup backups/support-bot-$(date +%F).json
+
+# Восстановить данные из бэкапа
+python scripts/redis_backup.py restore backups/support-bot-2025-10-20.json
+```
+
+Скрипт читает параметры подключения из `.env` (`REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, опционально `REDIS_PASSWORD`). При восстановлении целевые hash'и предварительно очищаются.
+
 ## Технологии
 
 - Python 3.12, [aiogram](https://docs.aiogram.dev) 3.x;
