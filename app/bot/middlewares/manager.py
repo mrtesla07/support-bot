@@ -31,8 +31,21 @@ class ManagerMiddleware(BaseMiddleware):
         state: FSMContext = data.get("state")
         state_data = await state.get_data()
 
-        # Get the language_code from state_data or user.language_code
-        language_code = state_data.get("language_code", user.language_code)
+        config = data["config"].bot
+
+        if not config.LANGUAGE_PROMPT_ENABLED:
+            language_code = config.DEFAULT_LANGUAGE
+        else:
+            language_code = state_data.get("language_code")
+
+            if language_code is None:
+                user_data = data.get("user_data")
+                if user_data and user_data.language_code:
+                    language_code = user_data.language_code
+
+            if language_code is None:
+                language_code = config.DEFAULT_LANGUAGE
+
         # Create a Manager instance with a custom emoji, data, and language_code
         manager = Manager("💎", data, language_code)
         # Pass the manager object to the handler function
