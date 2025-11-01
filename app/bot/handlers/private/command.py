@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import Command, MagicData
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram_newsletter.manager import ANManager
 
 from app.bot.handlers.private.windows import Window
@@ -12,6 +12,7 @@ from app.bot.utils.language import resolve_language_code
 
 router = Router()
 router.message.filter(F.chat.type == "private")
+router.callback_query.filter(F.message.chat.type == "private")
 
 
 @router.message(Command("start"))
@@ -95,3 +96,24 @@ async def handler(
     users_ids = await redis.get_all_users_ids()
     await an_manager.newsletter_menu(users_ids, Window.main_menu)
     await manager.delete_message(message)
+
+
+@router.callback_query(
+    F.data == "admin:newsletter",
+    MagicData(F.event_from_user.id == F.config.bot.DEV_ID),  # type: ignore
+)
+async def newsletter_from_menu(
+        call: CallbackQuery,
+        manager: Manager,
+        an_manager: ANManager,
+        redis: RedisStorage,
+) -> None:
+    users_ids = await redis.get_all_users_ids()
+    await an_manager.newsletter_menu(users_ids, Window.main_menu)
+    await call.answer()
+
+
+@router.callback_query(F.data == "admin:menu")
+async def admin_menu_callback(call: CallbackQuery, manager: Manager) -> None:
+    await Window.main_menu(manager)
+    await call.answer()

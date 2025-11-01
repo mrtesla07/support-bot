@@ -16,14 +16,16 @@ router.message.filter(
     F.chat.type == "private",
     MagicData(F.event_from_user.id == F.config.bot.DEV_ID),  # type: ignore[attr-defined]
 )
+router.callback_query.filter(
+    F.message.chat.type == "private",
+    MagicData(F.event_from_user.id == F.config.bot.DEV_ID),  # type: ignore[attr-defined]
+)
 
 
-@router.message(Command("banned"))
-async def show_banned_users(message: Message, manager: Manager, redis: RedisStorage) -> None:
+async def _send_banned_users(manager: Manager, redis: RedisStorage) -> None:
     """
     Show all banned users with unban buttons.
     
-    :param message: Message object.
     :param manager: Manager object.
     :param redis: RedisStorage object.
     :return: None
@@ -31,8 +33,9 @@ async def show_banned_users(message: Message, manager: Manager, redis: RedisStor
     banned_users = await redis.get_banned_users()
     
     if not banned_users:
-        text = "Нет забаненных пользователей."
-        await message.reply(text)
+        builder = InlineKeyboardBuilder()
+        builder.button(text="⬅️ Назад", callback_data="admin:menu")
+        await manager.send_message("Забаненных пользователей нет.", reply_markup=builder.as_markup())
         return
     
     # Create a message with inline keyboard for each user
@@ -44,10 +47,23 @@ async def show_banned_users(message: Message, manager: Manager, redis: RedisStor
         text_parts.append(f"{i+1}. {user_link} (ID: {user_data.id})")
         builder.button(text=f"Разбанить {user_data.full_name}", callback_data=f"unban_user_{user_data.id}")
     
+    builder.button(text="⬅️ Назад", callback_data="admin:menu")
     builder.adjust(1)  # One button per row
     text = "\n".join(text_parts)
     
-    await message.reply(text, reply_markup=builder.as_markup())
+    await manager.send_message(text, reply_markup=builder.as_markup())
+
+
+@router.message(Command("banned"))
+async def show_banned_users(message: Message, manager: Manager, redis: RedisStorage) -> None:
+    await _send_banned_users(manager, redis)
+    await manager.delete_message(message)
+
+
+@router.callback_query(F.data == "admin:banned")
+async def show_banned_users_callback(call: CallbackQuery, manager: Manager, redis: RedisStorage) -> None:
+    await _send_banned_users(manager, redis)
+    await call.answer()
 
 
 @router.callback_query(F.data.startswith("unban_user_"))
@@ -76,12 +92,8 @@ async def unban_user_callback(call: CallbackQuery, manager: Manager, redis: Redi
     user_data.is_banned = False
     await redis.update_user(user_id, user_data)
     
-    # Update the message to remove the button and indicate the user was unbanned
-    message_text = call.message.html_text or call.message.text or ""
-    updated_text = message_text.replace(f"Разбанить {user_data.full_name}", f"✅ Разбанен {user_data.full_name}")
-    
-    await call.message.edit_text(updated_text)
     await call.answer(f"Пользователь {hbold(user_data.full_name)} (ID: {user_id}) разбанен.")
+    await _send_banned_users(manager, redis)
 
 
 @router.message(Command("unban"))
@@ -120,4 +132,5 @@ async def unban_user_command(message: Message, manager: Manager, redis: RedisSto
     user_data.is_banned = False
     await redis.update_user(user_id, user_data)
     
-    await message.reply(f"Пользователь {hbold(user_data.full_name)} (ID: {user_id}) разбанен.")
+    await manager.send_message(f"Пользователь {hbold(user_data.full_name)} (ID: {user_id}) разбанен.")
+    await manager.delete_message(message)

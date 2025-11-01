@@ -11,6 +11,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hbold
 
 from app.bot.manager import Manager
+from app.bot.handlers.private.windows import Window
 from app.bot.utils.redis import SettingsStorage
 from app.bot.utils.texts import SUPPORTED_LANGUAGES, TextMessage
 
@@ -51,6 +52,7 @@ def _build_menu_markup(overrides: dict[str, str]) -> InlineKeyboardBuilder:
             text=f"✅ {title}{suffix}",
             callback_data=f"resolve:set:{language}",
         )
+    builder.button(text="⬅️ Назад", callback_data="admin:menu")
     builder.button(text="✖️ Закрыть", callback_data="resolve:close")
     builder.adjust(1)
     return builder
@@ -109,6 +111,12 @@ async def show_menu(message: Message, manager: Manager, settings: SettingsStorag
     await manager.delete_message(message)
 
 
+@router.callback_query(F.data == "admin:closing")
+async def open_from_menu(call: CallbackQuery, manager: Manager, settings: SettingsStorage) -> None:
+    await _send_menu(manager, settings)
+    await call.answer()
+
+
 @router.callback_query(F.data.startswith("resolve:set:"))
 async def start_edit(call: CallbackQuery, manager: Manager, settings: SettingsStorage) -> None:
     language = call.data.split(":", maxsplit=2)[-1]
@@ -151,6 +159,7 @@ async def close_menu(call: CallbackQuery, manager: Manager) -> None:
     await manager.state.update_data(resolution_language=None)
     with suppress(Exception):
         await call.message.delete()
+    await Window.main_menu(manager)
     await call.answer("Меню закрыто")
 
 
