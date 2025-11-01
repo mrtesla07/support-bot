@@ -157,12 +157,17 @@ async def handle_incoming_message(
         else:
             raise
 
-    # Send a confirmation message to the user
-    text = manager.text_message.get("message_sent")
-    msg = await message.reply(text)
-    Manager.schedule_message_cleanup(msg)
-
     ticket_was_resolved = user_data.ticket_status == "resolved"
+    should_send_confirmation = (
+        user_data.last_user_message_at is None
+        or ticket_was_resolved
+    )
+
+    if should_send_confirmation:
+        # Уведомляем пользователя только на старте диалога или после повторного открытия тикета
+        text = manager.text_message.get("message_sent")
+        msg = await message.reply(text)
+        Manager.schedule_message_cleanup(msg)
 
     normalized = re.sub(r'[\W_]+', ' ', text_content.lower()).strip()
     if user_data.ticket_status == "resolved" and normalized in GRATITUDE_PHRASES:
