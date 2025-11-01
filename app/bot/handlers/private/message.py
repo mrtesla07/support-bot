@@ -8,6 +8,7 @@ from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import StateFilter
 from aiogram.types import Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hlink
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -17,7 +18,7 @@ from app.bot.utils.create_forum_topic import (
     create_forum_topic,
     get_or_create_forum_topic,
 )
-from app.bot.utils.redis import RedisStorage
+from app.bot.utils.redis import RedisStorage, FAQStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.reminders import schedule_support_reminder
 from app.bot.utils.security import analyze_user_message, sanitize_display_name
@@ -63,6 +64,7 @@ async def handle_incoming_message(
         redis: RedisStorage,
         user_data: UserData,
         apscheduler: AsyncIOScheduler,
+        faq: FAQStorage,
         album: Album | None = None,
 ) -> None:
     """
@@ -168,6 +170,17 @@ async def handle_incoming_message(
         text = manager.text_message.get("message_sent")
         msg = await message.reply(text)
         Manager.schedule_message_cleanup(msg)
+
+        if await faq.has_items():
+            suggestion_text = manager.text_message.get("faq_suggestion")
+            builder = InlineKeyboardBuilder()
+            builder.button(text="📚 Часто задаваемые вопросы", callback_data="faq:open")
+            builder.adjust(1)
+            await manager.send_message(
+                suggestion_text,
+                reply_markup=builder.as_markup(),
+                disable_web_page_preview=True,
+            )
 
     normalized = re.sub(r'[\W_]+', ' ', text_content.lower()).strip()
     if user_data.ticket_status == "resolved" and normalized in GRATITUDE_PHRASES:

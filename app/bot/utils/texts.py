@@ -34,6 +34,10 @@ class TextMessage(Text):
                 "change_language": "<b>Select language:</b>",
                 "main_menu": "<b>Write your question</b>, and we will answer you as soon as possible:",
                 "message_sent": "<b>Message sent!</b> Expect a response.",
+                "faq_suggestion": (
+                    "While you wait for a response, take a look at the frequently asked questions "
+                    "— the answer might already be there."
+                ),
                 "message_edited": (
                     "<b>The message was edited only in your chat.</b> "
                     "If you want support to receive the new version, send it again."
@@ -107,6 +111,9 @@ class TextMessage(Text):
                 "change_language": "<b>Выберите язык:</b>",
                 "main_menu": "<b>Напишите свой вопрос</b>, и мы ответим как можно быстрее:",
                 "message_sent": "<b>Сообщение отправлено!</b> Ожидайте ответа.",
+                "faq_suggestion": (
+                    "Пока вы ждёте ответа, загляните в раздел часто задаваемых вопросов — возможно, решение уже есть."
+                ),
                 "message_edited": (
                     "<b>Сообщение изменено только в вашем чате.</b> "
                     "Если хотите, чтобы поддержка увидела новую версию, отправьте сообщение заново."
