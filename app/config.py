@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from urllib.parse import quote
 
 from environs import Env
 
@@ -38,6 +39,7 @@ class RedisConfig:
     HOST: str
     PORT: int
     DB: int
+    PASSWORD: str | None = None
 
     def dsn(self) -> str:
         """
@@ -45,6 +47,9 @@ class RedisConfig:
 
         :return: The generated DSN.
         """
+        if self.PASSWORD:
+            encoded_password = quote(self.PASSWORD, safe="")
+            return f"redis://:{encoded_password}@{self.HOST}:{self.PORT}/{self.DB}"
         return f"redis://{self.HOST}:{self.PORT}/{self.DB}"
 
 
@@ -85,5 +90,6 @@ def load_config() -> Config:
             HOST=env.str("REDIS_HOST"),
             PORT=env.int("REDIS_PORT"),
             DB=env.int("REDIS_DB"),
+            PASSWORD=env.str("REDIS_PASSWORD", default="") or None,
         ),
     )

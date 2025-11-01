@@ -21,6 +21,17 @@ services:
     image: redis:alpine
     container_name: support-redis
     restart: always
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    command:
+      - sh
+      - -c
+      - >
+        if [ -n "$${REDIS_PASSWORD}" ]; then
+          exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}";
+        else
+          exec redis-server --appendonly yes;
+        fi
     volumes:
       - ./redis/data/:/data
     networks:

@@ -73,6 +73,19 @@ SUDO="$(need_sudo || true)"
 
 sha256() { command -v sha256sum >/dev/null 2>&1 && sha256sum "$1" | awk '{print $1}' || shasum -a 256 "$1" | awk '{print $1}'; }
 
+generate_password() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 24
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 - <<'PY'
+import secrets
+print(secrets.token_urlsafe(24))
+PY
+  else
+    LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32
+  fi
+}
+
 # ---------- self install to PATH ----------
 self_install() {
   local target="/usr/local/bin/${BIN_NAME}"
@@ -236,12 +249,19 @@ prompt_overrides() {
   read -r -p "BOT_DEFAULT_LANGUAGE (например en, ru; пусто = оставить): " in_lang || true
   read -r -p "BOT_LANGUAGE_PROMPT_ENABLED (true/false/yes/no; пусто = оставить): " in_prompt || true
   read -r -p "BOT_REMINDERS_ENABLED (true/false/yes/no; пусто = оставить): " in_reminders || true
+  read -r -p "REDIS_PASSWORD (Enter — сгенерировать автоматически): " in_redis_password || true
   OV_BOT_TOKEN="${in_token:-}"
   OV_DEV_ID="${in_dev:-}"
   OV_GROUP_ID="${in_group:-}"
   OV_DEFAULT_LANGUAGE="${in_lang:-}"
   OV_LANGUAGE_PROMPT=""
   OV_REMINDERS_ENABLED=""
+  OV_REDIS_PASSWORD=""
+  if [[ -z "${in_redis_password:-}" ]]; then
+    in_redis_password="$(generate_password)"
+    log "REDIS_PASSWORD сгенерирован автоматически и будет записан в .env."
+  fi
+  OV_REDIS_PASSWORD="${in_redis_password}"
   if [[ -n "${in_prompt:-}" ]]; then
     case "${in_prompt,,}" in
       y|yes|1)    OV_LANGUAGE_PROMPT="true" ;;
@@ -292,7 +312,8 @@ write_env_from_example() {
   [[ -n "${OV_GROUP_ID}"  ]] && safe_replace "BOT_GROUP_ID" "${OV_GROUP_ID}"  "${ENV_FILE}"
   [[ -n "${OV_DEFAULT_LANGUAGE}" ]] && safe_replace "BOT_DEFAULT_LANGUAGE" "${OV_DEFAULT_LANGUAGE}" "${ENV_FILE}"
   [[ -n "${OV_LANGUAGE_PROMPT}"  ]] && safe_replace "BOT_LANGUAGE_PROMPT_ENABLED" "${OV_LANGUAGE_PROMPT}" "${ENV_FILE}"
-  [[ -n ""  ]] && safe_replace "BOT_REMINDERS_ENABLED" "" ""
+  [[ -n "${OV_REMINDERS_ENABLED}" ]] && safe_replace "BOT_REMINDERS_ENABLED" "${OV_REMINDERS_ENABLED}" "${ENV_FILE}"
+  [[ -n "${OV_REDIS_PASSWORD}" ]] && safe_replace "REDIS_PASSWORD" "${OV_REDIS_PASSWORD}" "${ENV_FILE}"
   ok ".env создан из .env.example и обновлён выбранными параметрами."
 }
 

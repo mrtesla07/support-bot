@@ -68,6 +68,7 @@ async def main() -> None:
         host=config.redis.HOST,
         port=config.redis.PORT,
         db=config.redis.DB,
+        password=config.redis.PASSWORD,
     )
     apscheduler = AsyncIOScheduler(
         jobstores={"default": job_store},

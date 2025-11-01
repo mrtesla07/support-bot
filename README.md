@@ -54,6 +54,15 @@ python -m app
 docker compose up -d --build
 ```
 
+- Redis запускается с включённым AOF и сохраняет данные в каталоге `redis/data`. После `docker compose down` состояние остаётся, пока вы не выполните `docker compose down -v`.
+- Пароль для Redis берётся из переменной `REDIS_PASSWORD`; задайте в `.env` уникальное значение перед деплоем.
+- Docker автоматически создаёт каталог `redis/data` и выставляет на него права. Если вы запускаете rootless Docker или сталкиваетесь с `Permission denied`, создайте каталог вручную и выдать права пользователю Redis:
+  ```bash
+  mkdir -p redis/data
+  # Узнайте UID/GID образа: docker run --rm redis:alpine id redis
+  sudo chown -R 1001:1001 redis/data  # замените на значения из предыдущей команды
+  ```
+
 ## Обновление и миграции
 
 ```bash
@@ -80,6 +89,7 @@ docker compose up -d --build
 | `REDIS_HOST`           | адрес Redis                                           |
 | `REDIS_PORT`           | порт Redis                                            |
 | `REDIS_DB`             | номер базы Redis                                      |
+| `REDIS_PASSWORD`       | пароль для подключения к Redis (оставьте пустым, если не нужен) |
 
 Если выбор языка не нужен, задайте `BOT_DEFAULT_LANGUAGE` и отключите шаг выбора, выставив `BOT_LANGUAGE_PROMPT_ENABLED=false`. Тогда пользователь сразу открывает главное меню на выбранном языке.
 Если напоминания в группе не нужны, установите `BOT_REMINDERS_ENABLED=false` — бот перестанет планировать сообщения о просроченных ответах.
