@@ -30,12 +30,12 @@ def select_language_markup() -> Markup:
     return builder.as_markup()
 
 
-def admin_main_menu_markup(manager: Manager) -> Markup | None:
+def admin_main_menu_markup(manager: Manager) -> InlineKeyboardBuilder | None:
     """
     Generate admin controls for the main menu when DEV_ID opens the bot.
 
     :param manager: Manager object.
-    :return: InlineKeyboardMarkup or None.
+    :return: InlineKeyboardBuilder or None.
     """
     user = getattr(manager, "user", None)
     config = getattr(manager, "config", None)
@@ -49,8 +49,9 @@ def admin_main_menu_markup(manager: Manager) -> Markup | None:
     builder.button(text="👋 Приветствия", callback_data="admin:greeting")
     builder.button(text="✅ Сообщения закрытия", callback_data="admin:closing")
     builder.button(text="🚫 Забаненные", callback_data="admin:banned")
+    builder.button(text="📚 FAQ", callback_data="admin:faq")
     builder.adjust(2)
-    return builder.as_markup()
+    return builder
 
 
 class Window:
@@ -87,8 +88,16 @@ class Window:
         text = custom_text or manager.text_message.get("main_menu")
         with suppress(IndexError, KeyError):
             text = text.format(full_name=hbold(manager.user.full_name))
-        reply_markup = admin_main_menu_markup(manager)
-        await manager.send_message(text, reply_markup=reply_markup)
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="📚 Часто задаваемые вопросы", callback_data="faq:open")
+        builder.adjust(1)
+
+        admin_builder = admin_main_menu_markup(manager)
+        if admin_builder:
+            builder.attach(admin_builder)
+
+        await manager.send_message(text, reply_markup=builder.as_markup())
         await manager.state.set_state(None)
 
         redis: RedisStorage | None = manager.middleware_data.get("redis")

@@ -6,7 +6,8 @@
 Выгружает/загружает:
   - hash "users" (основные данные пользователя);
   - индексы "users_index_*" (сопоставление ID темы → ID пользователя);
-  - hash "settings" (настройки приветствий и текста закрытия тикета).
+  - hash "settings" (настройки приветствий и текста закрытия тикета);
+  - hash "faq:items" и список "faq:order" (раздел часто задаваемых вопросов).
 
 Использование:
   python scripts/redis_backup.py backup /path/to/backup.json
@@ -27,6 +28,8 @@ from redis.asyncio import Redis
 
 USERS_HASH = "users"
 SETTINGS_HASH = "settings"
+FAQ_ITEMS_HASH = "faq:items"
+FAQ_ORDER_KEY = "faq:order"
 USER_INDEX_PREFIX = f"{USERS_HASH}_index_"
 
 
@@ -68,6 +71,14 @@ async def backup(redis: Redis, target: Path) -> None:
 
     settings = await redis.hgetall(SETTINGS_HASH)
     indexes = await collect_indexes(redis)
+    faq_items_raw = await redis.hgetall(FAQ_ITEMS_HASH)
+    faq_items: Dict[str, Any] = {
+        key: json.loads(value) for key, value in faq_items_raw.items()
+    }
+    faq_order_raw = await redis.lrange(FAQ_ORDER_KEY, 0, -1)
+    faq_order = [
+        item.decode() if isinstance(item, bytes) else item for item in faq_order_raw
+    ]
 
     payload = {
         "meta": {
@@ -77,6 +88,10 @@ async def backup(redis: Redis, target: Path) -> None:
         "users": users,
         "indexes": indexes,
         "settings": settings,
+        "faq": {
+            "items": faq_items,
+            "order": faq_order,
+        },
     }
 
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -103,10 +118,15 @@ async def restore(redis: Redis, source: Path) -> None:
     users: Dict[str, Any] = data.get("users", {})
     indexes: Dict[str, Dict[str, str]] = data.get("indexes", {})
     settings: Dict[str, str] = data.get("settings", {})
+    faq_section: Dict[str, Any] = data.get("faq", {})
+    faq_items: Dict[str, Any] = faq_section.get("items", {})
+    faq_order: list[str] = faq_section.get("order", [])
 
     pipeline = redis.pipeline()
     pipeline.delete(USERS_HASH)
     pipeline.delete(SETTINGS_HASH)
+    pipeline.delete(FAQ_ITEMS_HASH)
+    pipeline.delete(FAQ_ORDER_KEY)
     await cleanup_indexes(redis)
     await pipeline.execute()
 
@@ -128,6 +148,16 @@ async def restore(redis: Redis, source: Path) -> None:
 
     if settings:
         await redis.hset(SETTINGS_HASH, mapping=settings)
+
+    if faq_items:
+        pipeline = redis.pipeline()
+        for item_id, payload in faq_items.items():
+            pipeline.hset(FAQ_ITEMS_HASH, item_id, json.dumps(payload, ensure_ascii=False))
+        await pipeline.execute()
+
+    await redis.delete(FAQ_ORDER_KEY)
+    if faq_order:
+        await redis.rpush(FAQ_ORDER_KEY, *faq_order)
 
 
 async def main() -> None:

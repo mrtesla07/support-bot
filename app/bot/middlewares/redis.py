@@ -5,7 +5,7 @@ from aiogram.types import TelegramObject, User, Chat
 from redis.asyncio import Redis
 
 from app.bot.utils.language import resolve_language_code
-from app.bot.utils.redis import RedisStorage, SettingsStorage
+from app.bot.utils.redis import RedisStorage, SettingsStorage, FAQStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.texts import SUPPORTED_LANGUAGES
 from app.config import Config
@@ -47,6 +47,7 @@ class RedisMiddleware(BaseMiddleware):
         # Create storage helpers backed by Redis
         redis = RedisStorage(self.redis)
         settings = SettingsStorage(self.redis)
+        faq = FAQStorage(self.redis)
 
         # Extract the chat and user objects from data
         chat: Chat = data.get("event_chat")
@@ -84,6 +85,7 @@ class RedisMiddleware(BaseMiddleware):
         # Add redis, settings and user_data to data for use in subsequent handlers
         data["redis"] = redis
         data["settings"] = settings
+        data["faq"] = faq
         data["user_data"] = user_data
 
         # Call the handler function with the event and data
