@@ -15,11 +15,6 @@ from .panel import ensure_operator_replied_flag
 from .security import sanitize_existing_display_names
 
 logger = logging.getLogger(__name__)
-    Migration(
-        version=2,
-        description="Initialize operator_replied flag for existing users.",
-        callback=ensure_operator_replied_flag,
-    ),
 
 MigrationCallback = Callable[["MigrationContext"], Awaitable[None]]
 
