@@ -11,9 +11,15 @@ from redis.asyncio import Redis
 from app.bot.utils.redis import RedisStorage
 from app.config import Config
 
+from .panel import ensure_operator_replied_flag
 from .security import sanitize_existing_display_names
 
 logger = logging.getLogger(__name__)
+    Migration(
+        version=2,
+        description="Initialize operator_replied flag for existing users.",
+        callback=ensure_operator_replied_flag,
+    ),
 
 MigrationCallback = Callable[["MigrationContext"], Awaitable[None]]
 
@@ -94,7 +100,12 @@ async def run_migrations(*, config: Config, bot: Bot, redis: Redis) -> None:
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
-        description="Санация сохранённых отображаемых имён и переименование существующих тем.",
+        description="Санитация отображаемых имен и переименование существующих тем.",
         callback=sanitize_existing_display_names,
+    ),
+    Migration(
+        version=2,
+        description="Initialize operator_replied flag for existing users.",
+        callback=ensure_operator_replied_flag,
     ),
 )
