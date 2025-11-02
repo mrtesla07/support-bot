@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import time
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -60,8 +62,28 @@ async def main() -> None:
     """
     Main function that initializes the bot and starts the event loop.
     """
+    logger = logging.getLogger("support_bot.startup")
+
     # Load config
     config = load_config()
+
+    logger.info("🚀 Запуск support-bot…")
+    logger.info(
+        "⚙️  Redis: %s:%s/%s",
+        config.redis.HOST,
+        config.redis.PORT,
+        config.redis.DB,
+    )
+    logger.info("👤 DEV_ID: %s", config.bot.DEV_ID)
+    logger.info("🗣️  Язык по умолчанию: %s", config.bot.DEFAULT_LANGUAGE)
+    logger.info(
+        "🧭 Подсказка выбора языка: %s",
+        "включена" if config.bot.LANGUAGE_PROMPT_ENABLED else "выключена",
+    )
+    logger.info(
+        "⏰ Напоминания операторам: %s",
+        "активны" if config.bot.REMINDERS_ENABLED else "отключены",
+    )
 
     # Initialize apscheduler
     job_store = RedisJobStore(
@@ -99,17 +121,28 @@ async def main() -> None:
     dp.shutdown.register(on_shutdown)
 
     # Include routes
+    logger.info("🧭 Подключаем роутеры…")
     include_routers(dp)
+    logger.info("✅ Роутеры подключены")
     # Register middlewares
+    logger.info("🧱 Регистрируем middleware…")
     register_middlewares(
         dp, config=config, redis=storage.redis, apscheduler=apscheduler
     )
+    logger.info("✅ Middleware зарегистрированы")
 
     # Apply pending migrations before starting polling
+    logger.info("🧹 Запускаем миграции…")
+    migration_started = time.perf_counter()
     await run_migrations(config=config, bot=bot, redis=storage.redis)
+    logger.info(
+        "✅ Миграции завершены за %.2f с",
+        time.perf_counter() - migration_started,
+    )
 
     # Start the bot
     await bot.delete_webhook()
+    logger.info("🤖 Бот готов к приёму обновлений")
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
