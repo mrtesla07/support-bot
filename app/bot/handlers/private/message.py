@@ -19,6 +19,7 @@ from app.bot.utils.create_forum_topic import (
     create_forum_topic,
     get_or_create_forum_topic,
 )
+from app.bot.handlers.group.panel import panel_text, main_keyboard
 from app.bot.utils.redis import RedisStorage, FAQStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.reminders import schedule_support_reminder
@@ -132,7 +133,7 @@ async def handle_incoming_message(
         )
         return
 
-    async def copy_message_to_topic():
+    async def copy_message_to_topic() -> int | None:
         """
         Copies the message or album to the forum topic.
         If no album is provided, the message is copied. Otherwise, the album is copied.
@@ -154,9 +155,10 @@ async def handle_incoming_message(
                 chat_id=manager.config.bot.GROUP_ID,
                 message_thread_id=message_thread_id,
             )
+        return message_thread_id
 
     try:
-        await copy_message_to_topic()
+        thread_id = await copy_message_to_topic()
     except TelegramBadRequest as ex:
         if "message thread not found" in ex.message:
             user_data.message_thread_id = await create_forum_topic(
@@ -165,9 +167,27 @@ async def handle_incoming_message(
                 user_data.full_name,
             )
             await redis.update_user(user_data.id, user_data)
-            await copy_message_to_topic()
+            thread_id = await copy_message_to_topic()
         else:
             raise
+
+    if thread_id is not None:
+        if user_data.panel_message_id:
+            with suppress(TelegramBadRequest):
+                await message.bot.delete_message(
+                    chat_id=manager.config.bot.GROUP_ID,
+                    message_id=user_data.panel_message_id,
+                )
+        panel_message = await message.bot.send_message(
+            chat_id=manager.config.bot.GROUP_ID,
+            message_thread_id=thread_id,
+            text=panel_text(manager.text_message, user_data),
+            reply_markup=main_keyboard(
+                user_data.id,
+                ticket_status=user_data.ticket_status,
+            ),
+        )
+        user_data.panel_message_id = panel_message.message_id
 
     ticket_was_resolved = user_data.ticket_status == "resolved"
     should_send_confirmation = (

@@ -81,6 +81,14 @@ class TextMessage(Text):
                 ),
                 "message_not_sent": "<b>Message not sent!</b> An unexpected error occurred.",
                 "message_sent_to_user": "<b>Message sent to the user!</b>",
+                "support_panel_prompt": "Choose an action for {full_name} (status: {status}).",
+                "ticket_status_open": "open",
+                "ticket_status_resolved": "resolved",
+                "support_panel_reply_prompt": "Reply to {full_name}. Send your message below.",
+                "support_panel_reply_placeholder": "Reply to the user",
+                "support_panel_reply_hint": "Write the response in this chat.",
+                "support_panel_postponed": "Reminder postponed for 5 minutes.",
+                "support_panel_status_changed": "Ticket status updated.",
                 "auto_blocked_notice": (
                     "<b>Message blocked.</b>\n"
                     "Our safety filter detected suspicious data ({reason}).\n"
@@ -101,6 +109,7 @@ class TextMessage(Text):
                     "<b>User {user} is waiting for a reply.</b>\nPlease check the conversation."
                 ),
                 "ticket_resolved": "<b>Ticket marked as resolved.</b>",
+                "ticket_reopened": "<b>Ticket reopened.</b>",
                 "ticket_resolved_user": (
                     "<b>Thank you for reaching out!</b>\n"
                     "Your ticket is now closed, but you can reply here if you need more help."
@@ -157,6 +166,14 @@ class TextMessage(Text):
                 ),
                 "message_not_sent": "<b>Сообщение не отправлено!</b> Произошла непредвиденная ошибка.",
                 "message_sent_to_user": "<b>Сообщение отправлено пользователю!</b>",
+                "support_panel_prompt": "Выберите действие для {full_name} (статус: {status}).",
+                "ticket_status_open": "открыт",
+                "ticket_status_resolved": "решён",
+                "support_panel_reply_prompt": "Ответ пользователю {full_name}. Отправьте сообщение ниже.",
+                "support_panel_reply_placeholder": "Ответ пользователю",
+                "support_panel_reply_hint": "Введите ответ в этом чате.",
+                "support_panel_postponed": "Напоминание отложено на 5 минут.",
+                "support_panel_status_changed": "Статус тикета обновлён.",
                 "auto_blocked_notice": (
                     "<b>Сообщение заблокировано.</b>\n"
                     "Фильтр безопасности обнаружил подозрительные данные ({reason}).\n"
@@ -177,6 +194,7 @@ class TextMessage(Text):
                     "<b>{user} ждёт ответа.</b>\nПроверьте, пожалуйста, тему."
                 ),
                 "ticket_resolved": "<b>Тикет отмечен как решённый.</b>",
+                "ticket_reopened": "Тикет снова открыт.",
                 "ticket_resolved_user": (
                     "<b>Спасибо за обращение!</b>\n"
                     "Тикет закрыт. Если помощь ещё нужна, просто ответьте в этом чате."
