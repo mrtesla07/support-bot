@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 
 import re
@@ -38,6 +39,8 @@ GRATITUDE_PHRASES = {
 
 router = Router()
 router.message.filter(F.chat.type == "private", StateFilter(None))
+
+logger = logging.getLogger(__name__)
 
 
 @router.edited_message()
@@ -104,6 +107,13 @@ async def handle_incoming_message(
         await redis.update_user(user_data.id, user_data)
 
         reason_text = "; ".join(suspicion.reasons())
+        logger.warning(
+            "Auto-ban triggered for user %s (%s). Reasons: %s. Original message: %r",
+            user_data.id,
+            user_data.username,
+            reason_text,
+            text_content,
+        )
         await message.reply(
             manager.text_message.get("auto_blocked_notice").format(reason=reason_text),
         )
