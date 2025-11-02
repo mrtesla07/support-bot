@@ -1,9 +1,10 @@
 import asyncio
+from contextlib import suppress
 from typing import Optional
 
 from aiogram import Router, F
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from aiogram.filters import MagicData
 from aiogram.types import Message
 from aiogram.utils.markdown import hlink
@@ -97,6 +98,15 @@ async def handler(message: Message, manager: Manager, redis: RedisStorage, apsch
     # Reply with a short-lived confirmation
     msg = await message.reply(text)
     Manager.schedule_message_cleanup(msg)
+
+    if user_data.ticket_status != "resolved" and not user_data.operator_replied:
+        with suppress(TelegramBadRequest):
+            await message.bot.edit_forum_topic(
+                chat_id=message.chat.id,
+                message_thread_id=message.message_thread_id,
+                icon_custom_emoji_id=manager.config.bot.BOT_ACTIVE_EMOJI_ID,
+            )
+        user_data.operator_replied = True
 
     user_data.awaiting_reply = False
     await redis.update_user(user_data.id, user_data)

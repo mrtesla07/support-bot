@@ -20,6 +20,7 @@ class UserData:
     last_user_message_at: str | None = None
     created_at: str = datetime.now(timezone(timedelta(hours=3))).strftime("%Y-%m-%d %H:%M:%S %Z")
     panel_message_id: int | None = None
+    operator_replied: bool = False
 
     def to_dict(self) -> dict:
         """

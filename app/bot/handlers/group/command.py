@@ -142,6 +142,7 @@ async def _resolve_ticket(
 
     user_data.ticket_status = "resolved"
     user_data.awaiting_reply = False
+    user_data.operator_replied = False
     await redis.update_user(user_data.id, user_data)
     cancel_support_reminder(apscheduler, user_data.id)
 
@@ -167,6 +168,7 @@ async def _reopen_ticket(
 ) -> None:
     user_data.ticket_status = "open"
     user_data.awaiting_reply = False
+    user_data.operator_replied = False
     await redis.update_user(user_data.id, user_data)
     cancel_support_reminder(apscheduler, user_data.id)
 

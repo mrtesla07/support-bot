@@ -133,6 +133,11 @@ async def handle_incoming_message(
         )
         return
 
+    ticket_was_resolved = user_data.ticket_status == "resolved"
+    if ticket_was_resolved:
+        user_data.operator_replied = False
+    should_reset_icon = ticket_was_resolved or not user_data.operator_replied
+
     async def copy_message_to_topic() -> int | None:
         """
         Copies the message or album to the forum topic.
@@ -171,7 +176,13 @@ async def handle_incoming_message(
         else:
             raise
 
-    if thread_id is not None:
+    if thread_id is not None and should_reset_icon:
+        with suppress(TelegramBadRequest):
+            await message.bot.edit_forum_topic(
+                chat_id=manager.config.bot.GROUP_ID,
+                message_thread_id=thread_id,
+                icon_custom_emoji_id=manager.config.bot.BOT_EMOJI_ID,
+            )
         if user_data.panel_message_id:
             with suppress(TelegramBadRequest):
                 await message.bot.delete_message(
@@ -189,7 +200,6 @@ async def handle_incoming_message(
         )
         user_data.panel_message_id = panel_message.message_id
 
-    ticket_was_resolved = user_data.ticket_status == "resolved"
     should_send_confirmation = (
         user_data.last_user_message_at is None
         or ticket_was_resolved

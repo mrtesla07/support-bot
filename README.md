@@ -85,7 +85,8 @@ docker compose up -d --build
 | `BOT_TOKEN`            | токен, выданный [@BotFather](https://t.me/BotFather)  |
 | `BOT_DEV_ID`           | Telegram ID администратора (доступ к /newsletter)     |
 | `BOT_GROUP_ID`         | ID чат-форума, куда пересылаются обращения            |
-| `BOT_EMOJI_ID`         | кастомное эмодзи для активных тем                     |
+| `BOT_EMOJI_ID`         | кастомное эмодзи для новых обращений                  |
+| `BOT_ACTIVE_EMOJI_ID`  | эмодзи для тикетов в обсуждении (после ответа оператора) |
 | `BOT_RESOLVED_EMOJI_ID`| эмодзи для решённых тикетов                           |
 | `BOT_DEFAULT_LANGUAGE` | код языка по умолчанию (`en`, `ru`, и т.п.)           |
 | `BOT_LANGUAGE_PROMPT_ENABLED` | `true/false`, показывать ли окно выбора языка  |
