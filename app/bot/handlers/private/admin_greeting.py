@@ -95,7 +95,7 @@ async def _send_menu(manager: Manager, settings: SettingsStorage) -> None:
     text = _build_menu_text(overrides)
     await manager.state.set_state(None)
     await manager.state.update_data(greeting_language=None)
-    await manager.send_message(text, reply_markup=markup)
+    await manager.send_message(text, reply_markup=markup, replace_previous=False)
 
 
 @router.message(Command("greeting"))
@@ -124,7 +124,11 @@ async def start_edit(call: CallbackQuery, manager: Manager, settings: SettingsSt
     await manager.state.update_data(greeting_language=language)
 
     markup = _build_edit_markup(language).as_markup()
-    await manager.send_message(_build_edit_text(language, current_text), reply_markup=markup)
+    await manager.send_message(
+        _build_edit_text(language, current_text),
+        reply_markup=markup,
+        replace_previous=False,
+    )
     await call.answer()
 
 

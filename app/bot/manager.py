@@ -81,6 +81,8 @@ class Manager:
             disable_web_page_preview: bool | None = UNSET_DISABLE_WEB_PAGE_PREVIEW,
             disable_notification: bool | None = None,
             reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove | ForceReply | None = None,
+            *,
+            replace_previous: bool = True,
     ) -> None:
         """
         Send a message using the bot.
@@ -90,10 +92,32 @@ class Manager:
         :param disable_web_page_preview: Disable web page preview.
         :param disable_notification: Disable notification.
         :param reply_markup: The reply markup.
+        :param replace_previous: Whether to delete the previous message instead of editing it.
 
         :return: None.
         """
-        await self.delete_previous_message()
+        previous_message_id = await self.get_old_message_id()
+
+        if not replace_previous and previous_message_id is not None:
+            try:
+                await self.bot.edit_message_text(
+                    text=text,
+                    chat_id=self.user.id,
+                    message_id=previous_message_id,
+                    parse_mode=parse_mode,
+                    disable_web_page_preview=disable_web_page_preview,
+                    reply_markup=reply_markup,
+                )
+                await self.state.update_data(message_id=previous_message_id)
+                return
+            except TelegramBadRequest as ex:
+                if not any(e in ex.message for e in MESSAGE_EDIT_ERRORS):
+                    raise ex
+                await self.delete_previous_message()
+
+        if replace_previous:
+            await self.delete_previous_message()
+
         message = await self.bot.send_message(
             text=text,
             chat_id=self.user.id,

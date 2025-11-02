@@ -45,6 +45,7 @@ async def _send_faq_item(manager: Manager, item: FAQItem) -> None:
         message_text,
         disable_web_page_preview=True,
         reply_markup=builder.as_markup(),
+        replace_previous=False,
     )
 
     for attachment in item.attachments:
@@ -79,7 +80,14 @@ async def _show_user_faq_list(manager: Manager, faq: FAQStorage) -> None:
     """Render FAQ list to the user."""
     items = await faq.list_items()
     if not items:
-        await manager.send_message("Список часто задаваемых вопросов пока пуст.")
+        builder = InlineKeyboardBuilder()
+        builder.button(text="🏠 Главное меню", callback_data="faq:back")
+        builder.adjust(1)
+        await manager.send_message(
+            "Список часто задаваемых вопросов пока пуст.",
+            reply_markup=builder.as_markup(),
+            replace_previous=False,
+        )
         return
 
     builder = InlineKeyboardBuilder()
@@ -88,7 +96,11 @@ async def _show_user_faq_list(manager: Manager, faq: FAQStorage) -> None:
     builder.button(text="⬅️ Назад", callback_data="faq:back")
     builder.adjust(1)
 
-    await manager.send_message("Выберите вопрос из списка:", reply_markup=builder.as_markup())
+    await manager.send_message(
+        "Выберите вопрос из списка:",
+        reply_markup=builder.as_markup(),
+        replace_previous=False,
+    )
 
 
 def _collect_attachments(message: Message) -> tuple[str | None, list[FAQAttachment]]:
@@ -165,7 +177,7 @@ async def _show_admin_faq_overview(manager: Manager, faq: FAQStorage) -> None:
     items = await faq.list_items()
     text, builder = _render_admin_faq_overview(items)
     await manager.state.set_state(None)
-    await manager.send_message(text, reply_markup=builder.as_markup())
+    await manager.send_message(text, reply_markup=builder.as_markup(), replace_previous=False)
 
 
 async def _show_admin_item_menu(manager: Manager, item: FAQItem) -> None:
@@ -190,7 +202,7 @@ async def _show_admin_item_menu(manager: Manager, item: FAQItem) -> None:
         preview_lines.append("")
         preview_lines.append(f"Вложения: {len(item.attachments)}")
 
-    await manager.send_message("\n".join(preview_lines), reply_markup=builder.as_markup())
+    await manager.send_message("\n".join(preview_lines), reply_markup=builder.as_markup(), replace_previous=False)
 
 
 # -------------------------- User handlers -----------------------------------
@@ -245,7 +257,7 @@ async def admin_open_faq(call: CallbackQuery, manager: Manager, faq: FAQStorage)
 async def admin_add_faq(call: CallbackQuery, manager: Manager) -> None:
     await manager.state.set_state(FAQStates.waiting_title)
     await manager.state.update_data(faq_item_id=None)
-    await manager.send_message("Введите заголовок для новой кнопки FAQ.")
+    await manager.send_message("Введите заголовок для новой кнопки FAQ.", replace_previous=False)
     await call.answer()
 
 
@@ -260,6 +272,8 @@ async def admin_receive_title(message: Message, manager: Manager) -> None:
     await manager.state.set_state(FAQStates.waiting_content)
     await manager.send_message(
         "Отправьте ответ одним сообщением. Можно приложить фото, видео или документ с подписью."
+        ,
+        replace_previous=False
     )
     await manager.delete_message(message)
 
@@ -319,7 +333,10 @@ async def admin_start_rename(call: CallbackQuery, manager: Manager, faq: FAQStor
 
     await manager.state.set_state(FAQStates.editing_title)
     await manager.state.update_data(faq_item_id=item_id)
-    await manager.send_message(f"Текущий заголовок: <b>{html.escape(item.title)}</b>\nВведите новый заголовок.")
+    await manager.send_message(
+        f"Текущий заголовок: <b>{html.escape(item.title)}</b>\nВведите новый заголовок.",
+        replace_previous=False,
+    )
     await call.answer()
 
 
@@ -370,6 +387,8 @@ async def admin_start_update_content(call: CallbackQuery, manager: Manager, faq:
     await manager.state.update_data(faq_item_id=item_id)
     await manager.send_message(
         "Отправьте новое содержимое ответа одним сообщением. Можно приложить медиафайл."
+        ,
+        replace_previous=False
     )
     await call.answer()
 

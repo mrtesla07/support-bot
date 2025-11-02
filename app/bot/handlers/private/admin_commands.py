@@ -35,7 +35,11 @@ async def _send_banned_users(manager: Manager, redis: RedisStorage) -> None:
     if not banned_users:
         builder = InlineKeyboardBuilder()
         builder.button(text="⬅️ Назад", callback_data="admin:menu")
-        await manager.send_message("Забаненных пользователей нет.", reply_markup=builder.as_markup())
+        await manager.send_message(
+            "Забаненных пользователей нет.",
+            reply_markup=builder.as_markup(),
+            replace_previous=False,
+        )
         return
     
     # Create a message with inline keyboard for each user
@@ -51,7 +55,7 @@ async def _send_banned_users(manager: Manager, redis: RedisStorage) -> None:
     builder.adjust(1)  # One button per row
     text = "\n".join(text_parts)
     
-    await manager.send_message(text, reply_markup=builder.as_markup())
+    await manager.send_message(text, reply_markup=builder.as_markup(), replace_previous=False)
 
 
 @router.message(Command("banned"))

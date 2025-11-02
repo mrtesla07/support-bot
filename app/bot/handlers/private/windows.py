@@ -90,14 +90,22 @@ class Window:
             text = text.format(full_name=hbold(manager.user.full_name))
 
         builder = InlineKeyboardBuilder()
-        builder.button(text="📚 Часто задаваемые вопросы", callback_data="faq:open")
-        builder.adjust(1)
+        has_buttons = False
+
+        faq_storage = manager.middleware_data.get("faq")
+        if faq_storage and await faq_storage.has_items():
+            builder.button(text="📚 Часто задаваемые вопросы", callback_data="faq:open")
+            builder.adjust(1)
+            has_buttons = True
 
         admin_builder = admin_main_menu_markup(manager)
         if admin_builder:
             builder.attach(admin_builder)
+            has_buttons = True
 
-        await manager.send_message(text, reply_markup=builder.as_markup())
+        reply_markup = builder.as_markup() if has_buttons else None
+
+        await manager.send_message(text, reply_markup=reply_markup, replace_previous=False)
         await manager.state.set_state(None)
 
         redis: RedisStorage | None = manager.middleware_data.get("redis")
