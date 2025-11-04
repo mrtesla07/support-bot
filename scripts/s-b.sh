@@ -246,6 +246,9 @@ prompt_overrides() {
   read -r -p "BOT_TOKEN (оставьте пустым, чтобы не менять): " in_token || true
   read -r -p "BOT_DEV_ID (оставьте пустым, чтобы не менять): " in_dev   || true
   read -r -p "BOT_GROUP_ID (оставьте пустым, чтобы не менять): " in_group || true
+  read -r -p "BOT_EMOJI_ID (оставьте пустым, чтобы не менять): " in_emoji || true
+  read -r -p "BOT_ACTIVE_EMOJI_ID (оставьте пустым, чтобы не менять): " in_emoji_active || true
+  read -r -p "BOT_RESOLVED_EMOJI_ID (оставьте пустым, чтобы не менять): " in_emoji_resolved || true
   read -r -p "BOT_DEFAULT_LANGUAGE (например en, ru; пусто = оставить): " in_lang || true
   read -r -p "BOT_LANGUAGE_PROMPT_ENABLED (true/false/yes/no; пусто = оставить): " in_prompt || true
   read -r -p "BOT_REMINDERS_ENABLED (true/false/yes/no; пусто = оставить): " in_reminders || true
@@ -253,6 +256,9 @@ prompt_overrides() {
   OV_BOT_TOKEN="${in_token:-}"
   OV_DEV_ID="${in_dev:-}"
   OV_GROUP_ID="${in_group:-}"
+  OV_BOT_EMOJI_ID="${in_emoji:-}"
+  OV_BOT_ACTIVE_EMOJI_ID="${in_emoji_active:-}"
+  OV_BOT_RESOLVED_EMOJI_ID="${in_emoji_resolved:-}"
   OV_DEFAULT_LANGUAGE="${in_lang:-}"
   OV_LANGUAGE_PROMPT=""
   OV_REMINDERS_ENABLED=""
@@ -310,6 +316,9 @@ write_env_from_example() {
   [[ -n "${OV_BOT_TOKEN}" ]] && safe_replace "BOT_TOKEN"    "${OV_BOT_TOKEN}" "${ENV_FILE}"
   [[ -n "${OV_DEV_ID}"    ]] && safe_replace "BOT_DEV_ID"   "${OV_DEV_ID}"    "${ENV_FILE}"
   [[ -n "${OV_GROUP_ID}"  ]] && safe_replace "BOT_GROUP_ID" "${OV_GROUP_ID}"  "${ENV_FILE}"
+  [[ -n "${OV_BOT_EMOJI_ID}" ]] && safe_replace "BOT_EMOJI_ID" "${OV_BOT_EMOJI_ID}" "${ENV_FILE}"
+  [[ -n "${OV_BOT_ACTIVE_EMOJI_ID}" ]] && safe_replace "BOT_ACTIVE_EMOJI_ID" "${OV_BOT_ACTIVE_EMOJI_ID}" "${ENV_FILE}"
+  [[ -n "${OV_BOT_RESOLVED_EMOJI_ID}" ]] && safe_replace "BOT_RESOLVED_EMOJI_ID" "${OV_BOT_RESOLVED_EMOJI_ID}" "${ENV_FILE}"
   [[ -n "${OV_DEFAULT_LANGUAGE}" ]] && safe_replace "BOT_DEFAULT_LANGUAGE" "${OV_DEFAULT_LANGUAGE}" "${ENV_FILE}"
   [[ -n "${OV_LANGUAGE_PROMPT}"  ]] && safe_replace "BOT_LANGUAGE_PROMPT_ENABLED" "${OV_LANGUAGE_PROMPT}" "${ENV_FILE}"
   [[ -n "${OV_REMINDERS_ENABLED}" ]] && safe_replace "BOT_REMINDERS_ENABLED" "${OV_REMINDERS_ENABLED}" "${ENV_FILE}"
