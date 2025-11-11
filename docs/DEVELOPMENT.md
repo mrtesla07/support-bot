@@ -82,11 +82,11 @@ app/
 ## Полезные команды
 
 ```bash
-pip install -r requirements.txt   # зависимости
-python -m app                    # запуск локально
-pytest                           # тесты
-python scripts/redis_backup.py backup backups/db.json   # бэкап
-python scripts/redis_backup.py restore backups/db.json  # восстановление
+pip install -r requirements.txt                    # зависимости
+python -m app                                     # запуск локально
+pytest                                            # тесты
+python scripts/redis_backup.py backup --compress  # полный дамп Redis
+python scripts/redis_backup.py restore backups/db.rdb.gz --data-dir ./redis/data  # восстановление
 docker compose up -d --build
 ```
 

@@ -158,7 +158,15 @@ curl -fsSL https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/
    Команду выполняйте из каталога конкретного бота. Обновления (`git pull`, `docker compose down && docker compose up -d --build`) и просмотр логов (`docker compose logs`) тоже проводите по очереди.
 
 5. **Делайте независимые бэкапы**
-   Перед `scripts/redis_backup.py` подгружайте `.env` нужного проекта (или задавайте переменные окружения), чтобы файл содержал данные только одной инсталляции.
+   Перед запуском `scripts/redis_backup.py` подгружайте `.env` нужного проекта (или задавайте переменные окружения), чтобы дамп содержал только данные выбранной инсталляции. Скрипт снимает полный бинарный RDB-дамп через `redis-cli --rdb`, умеет сжимать результат (`--compress`), считать SHA256 (`--checksum`) и удалять старые файлы (`--keep`).
+
+   ```bash
+   # ежедневный RDB-бэкап с gzip и хранением 7 файлов
+   python scripts/redis_backup.py backup --compress --keep 7
+
+   # восстановление (Redis должен быть остановлен, затем перезапустите контейнер)
+   python scripts/redis_backup.py restore backups/support-bot-2025-10-20.rdb.gz --data-dir ./redis/data
+   ```
 
 Следуя этим шагам, код и зависимости остаются общими, а конфигурация, контейнеры и данные полностью изолированы между ботами.
 
@@ -167,17 +175,17 @@ curl -fsSL https://raw.githubusercontent.com/mrtesla07/support-bot/main/scripts/
 
 ## Резервные копии
 
-Для экспорта/импорта данных Redis предусмотрен скрипт `scripts/redis_backup.py`. Он сохраняет:
-- hash `users` (весь профиль пользователя, статус тикета, silent-mode, язык и т.п.);
-- hash `settings` (кастомные приветствия и сообщения закрытия);
-- индексы `users_index_*` (связь ID темы ↔ ID пользователя).
+Для полноценного резервного копирования Redis используйте `scripts/redis_backup.py`:
+- создаёт бинарный RDB-дамп через `redis-cli --rdb` (можно добавлять `--compress`, чтобы получить `.rdb.gz`);
+- умеет проверять файл `redis-check-rdb` (`--verify`), писать SHA256 (`--checksum`) и автоматически чистить старые дампы (`--keep`);
+- команда `restore` копирует файл в data-директорию (`dump.rdb`), поэтому перед восстановлением остановите Redis/контейнер и после копирования запустите его снова.
 
 ```bash
-# Сделать бэкап в файл backup-$(date).json
-python scripts/redis_backup.py backup backups/support-bot-$(date +%F).json
+# Снять полный дамп с gzip и хранить последние 14 файлов
+python scripts/redis_backup.py backup --compress --keep 14
 
-# Восстановить данные из бэкапа
-python scripts/redis_backup.py restore backups/support-bot-2025-10-20.json
+# Развернуть дамп в локальный каталог redis/data
+python scripts/redis_backup.py restore backups/support-bot-2025-10-20.rdb.gz --data-dir ./redis/data --yes --force
 ```
 
 Скрипт читает параметры подключения из `.env` (`REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, опционально `REDIS_PASSWORD`). При восстановлении целевые hash'и предварительно очищаются.

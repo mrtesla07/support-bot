@@ -1,189 +1,310 @@
 #!/usr/bin/env python3
-"""
-Утилита для резервного копирования и восстановления данных Redis,
-которые использует support-bot.
-
-Выгружает/загружает:
-  - hash "users" (основные данные пользователя);
-  - индексы "users_index_*" (сопоставление ID темы → ID пользователя);
-  - hash "settings" (настройки приветствий и текста закрытия тикета);
-  - hash "faq:items" и список "faq:order" (раздел часто задаваемых вопросов).
-
-Использование:
-  python scripts/redis_backup.py backup /path/to/backup.json
-  python scripts/redis_backup.py restore /path/to/backup.json
-"""
-
 from __future__ import annotations
 
 import argparse
-import asyncio
-import json
+import gzip
+import hashlib
+import os
+import shutil
+import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Iterable
 
 from environs import Env
-from redis.asyncio import Redis
 
-USERS_HASH = "users"
-SETTINGS_HASH = "settings"
-FAQ_ITEMS_HASH = "faq:items"
-FAQ_ORDER_KEY = "faq:order"
-USER_INDEX_PREFIX = f"{USERS_HASH}_index_"
+DEFAULT_PREFIX = "support-bot"
+DEFAULT_OUTPUT_DIR = Path("backups")
+DEFAULT_REDIS_CLI = "redis-cli"
+DEFAULT_CHECK_RDB = "redis-check-rdb"
+DEFAULT_DATA_DIR = Path("redis/data")
 
 
-def load_redis_url() -> str:
+@dataclass(frozen=True)
+class RedisConnection:
+    host: str
+    port: int
+    db: int
+    password: str | None = None
+
+
+def load_connection() -> RedisConnection:
     env = Env()
     env.read_env()
-    host = env.str("REDIS_HOST", "localhost")
-    port = env.int("REDIS_PORT", 6379)
-    db = env.int("REDIS_DB", 0)
-    password = env.str("REDIS_PASSWORD", default=None)
-
-    if password:
-        return f"redis://:{password}@{host}:{port}/{db}"
-    return f"redis://{host}:{port}/{db}"
+    return RedisConnection(
+        host=env.str("REDIS_HOST", "localhost"),
+        port=env.int("REDIS_PORT", 6379),
+        db=env.int("REDIS_DB", 0),
+        password=env.str("REDIS_PASSWORD", default="") or None,
+    )
 
 
-async def collect_indexes(redis: Redis) -> Dict[str, Dict[str, str]]:
-    result: Dict[str, Dict[str, str]] = {}
-    cursor = 0
-    pattern = f"{USER_INDEX_PREFIX}*"
-    while True:
-        cursor, keys = await redis.scan(cursor=cursor, match=pattern, count=100)
-        if not keys:
-            if cursor == 0:
-                break
-            continue
-        for key in keys:
-            result[key] = await redis.hgetall(key)
-        if cursor == 0:
-            break
-    return result
+def resolve_binary(name: str) -> str:
+    path = shutil.which(name)
+    if not path:
+        raise RuntimeError(f"Не найден исполняемый файл '{name}'. Добавьте его в PATH или укажите флагом.")
+    return path
 
 
-async def backup(redis: Redis, target: Path) -> None:
-    users_raw = await redis.hgetall(USERS_HASH)
-    users: Dict[str, Any] = {
-        key: json.loads(value) for key, value in users_raw.items()
-    }
+def build_filename(prefix: str, compress: bool) -> str:
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    suffix = ".rdb.gz" if compress else ".rdb"
+    return f"{prefix}-{timestamp}{suffix}"
 
-    settings = await redis.hgetall(SETTINGS_HASH)
-    indexes = await collect_indexes(redis)
-    faq_items_raw = await redis.hgetall(FAQ_ITEMS_HASH)
-    faq_items: Dict[str, Any] = {
-        key: json.loads(value) for key, value in faq_items_raw.items()
-    }
-    faq_order_raw = await redis.lrange(FAQ_ORDER_KEY, 0, -1)
-    faq_order = [
-        item.decode() if isinstance(item, bytes) else item for item in faq_order_raw
+
+def default_output_path(directory: Path, prefix: str, compress: bool) -> Path:
+    return directory / build_filename(prefix, compress)
+
+
+def ensure_parent(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def run_redis_dump(
+    *,
+    executable: str,
+    connection: RedisConnection,
+    target: Path,
+) -> None:
+    env = os.environ.copy()
+    if connection.password:
+        env["REDISCLI_AUTH"] = connection.password
+    elif "REDISCLI_AUTH" in env:
+        env.pop("REDISCLI_AUTH")
+
+    cmd = [
+        executable,
+        "-h",
+        connection.host,
+        "-p",
+        str(connection.port),
+        "-n",
+        str(connection.db),
+        "--rdb",
+        str(target),
     ]
-
-    payload = {
-        "meta": {
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "source": str(target),
-        },
-        "users": users,
-        "indexes": indexes,
-        "settings": settings,
-        "faq": {
-            "items": faq_items,
-            "order": faq_order,
-        },
-    }
-
-    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    subprocess.run(cmd, check=True, env=env)
 
 
-async def cleanup_indexes(redis: Redis) -> None:
-    cursor = 0
-    pattern = f"{USER_INDEX_PREFIX}*"
-    keys_to_delete = []
-    while True:
-        cursor, keys = await redis.scan(cursor=cursor, match=pattern, count=100)
-        keys_to_delete.extend(keys)
-        if cursor == 0:
-            break
-    for chunk_start in range(0, len(keys_to_delete), 100):
-        chunk = keys_to_delete[chunk_start:chunk_start + 100]
-        if chunk:
-            await redis.delete(*chunk)
+def compress_file(source: Path, destination: Path) -> None:
+    with source.open("rb") as src, gzip.open(destination, "wb") as dst:
+        shutil.copyfileobj(src, dst)
+    source.unlink()
 
 
-async def restore(redis: Redis, source: Path) -> None:
-    data = json.loads(source.read_text(encoding="utf-8"))
-
-    users: Dict[str, Any] = data.get("users", {})
-    indexes: Dict[str, Dict[str, str]] = data.get("indexes", {})
-    settings: Dict[str, str] = data.get("settings", {})
-    faq_section: Dict[str, Any] = data.get("faq", {})
-    faq_items: Dict[str, Any] = faq_section.get("items", {})
-    faq_order: list[str] = faq_section.get("order", [])
-
-    pipeline = redis.pipeline()
-    pipeline.delete(USERS_HASH)
-    pipeline.delete(SETTINGS_HASH)
-    pipeline.delete(FAQ_ITEMS_HASH)
-    pipeline.delete(FAQ_ORDER_KEY)
-    await cleanup_indexes(redis)
-    await pipeline.execute()
-
-    if users:
-        pipeline = redis.pipeline()
-        for user_id, payload in users.items():
-            pipeline.hset(USERS_HASH, user_id, json.dumps(payload, ensure_ascii=False))
-        await pipeline.execute()
-
-    if indexes:
-        for key, hash_payload in indexes.items():
-            if not hash_payload:
-                await redis.delete(key)
-                continue
-            pipe = redis.pipeline()
-            pipe.delete(key)
-            pipe.hset(key, mapping=hash_payload)
-            await pipe.execute()
-
-    if settings:
-        await redis.hset(SETTINGS_HASH, mapping=settings)
-
-    if faq_items:
-        pipeline = redis.pipeline()
-        for item_id, payload in faq_items.items():
-            pipeline.hset(FAQ_ITEMS_HASH, item_id, json.dumps(payload, ensure_ascii=False))
-        await pipeline.execute()
-
-    await redis.delete(FAQ_ORDER_KEY)
-    if faq_order:
-        await redis.rpush(FAQ_ORDER_KEY, *faq_order)
+def write_checksum(source: Path) -> Path:
+    digest = hashlib.sha256()
+    with source.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    checksum_path = source.with_name(f"{source.name}.sha256")
+    checksum_path.write_text(f"{digest.hexdigest()}  {source.name}\n", encoding="utf-8")
+    return checksum_path
 
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(description="Резервное копирование Redis данных support-bot.")
+def collect_backups(directory: Path, prefix: str, suffix: str) -> list[Path]:
+    def has_suffix(path: Path) -> bool:
+        return "".join(path.suffixes) == suffix
+
+    return sorted(
+        [
+            file
+            for file in directory.iterdir()
+            if file.is_file() and file.name.startswith(f"{prefix}-") and has_suffix(file)
+        ],
+        key=lambda file: file.stat().st_mtime,
+        reverse=True,
+    )
+
+
+def prune_backups(directory: Path, prefix: str, suffix: str, keep: int) -> list[Path]:
+    removed: list[Path] = []
+    backups = collect_backups(directory, prefix, suffix)
+    for candidate in backups[keep:]:
+        candidate.unlink(missing_ok=True)
+        checksum = candidate.with_name(f"{candidate.name}.sha256")
+        if checksum.exists():
+            checksum.unlink()
+        removed.append(candidate)
+    return removed
+
+
+def verify_rdb(executable: str, target: Path) -> None:
+    subprocess.run([executable, str(target)], check=True)
+
+
+def backup_command(args: argparse.Namespace) -> None:
+    connection = load_connection()
+    redis_cli = resolve_binary(args.redis_cli)
+    output_path: Path
+    if args.output:
+        output_path = args.output
+    else:
+        output_path = default_output_path(args.directory, args.prefix, args.compress)
+
+    tmp_target = output_path
+    if args.compress:
+        tmp_target = output_path.with_name(f"{output_path.name}.tmp")
+
+    ensure_parent(tmp_target)
+    if tmp_target.exists() and not args.force:
+        raise RuntimeError(f"Файл {tmp_target} уже существует. Укажите --force для перезаписи.")
+
+    print(f"Создаю дамп Redis в {tmp_target}...")
+    run_redis_dump(executable=redis_cli, connection=connection, target=tmp_target)
+
+    if args.compress:
+        ensure_parent(output_path)
+        print(f"Сжимаю дамп в {output_path}...")
+        compress_file(tmp_target, output_path)
+    else:
+        output_path = tmp_target
+
+    if args.verify:
+        checker = resolve_binary(args.redis_check_rdb)
+        print("Проверяю целостность через redis-check-rdb...")
+        verify_rdb(checker, output_path)
+
+    checksum_path = None
+    if args.checksum:
+        checksum_path = write_checksum(output_path)
+        print(f"SHA256 сохранён в {checksum_path}")
+
+    if args.keep and not args.output:
+        suffix = ".rdb.gz" if args.compress else ".rdb"
+        removed = prune_backups(output_path.parent, args.prefix, suffix, args.keep)
+        if removed:
+            print("Удалены старые бэкапы:")
+            for item in removed:
+                print(f"  - {item}")
+
+    print(f"Готово. Итоговый файл: {output_path}")
+    if checksum_path:
+        print(f"Контрольная сумма: {checksum_path}")
+
+
+def restore_command(args: argparse.Namespace) -> None:
+    source = args.input
+    if not source.exists():
+        raise RuntimeError(f"Файл {source} не найден.")
+
+    data_dir = args.data_dir
+    target = data_dir / "dump.rdb"
+    ensure_parent(target)
+
+    if not args.yes:
+        answer = input(
+            "Redis должен быть остановлен. Продолжить копирование бэкапа в data-директорию? [y/N]: "
+        ).strip()
+        if answer.lower() not in {"y", "yes", "д", "да"}:
+            print("Операция отменена.")
+            return
+
+    if target.exists() and not args.force:
+        raise RuntimeError(
+            f"Файл {target} уже существует. Используйте --force для перезаписи или переместите его вручную."
+        )
+
+    tmp_target = target.with_suffix(".tmp")
+    if source.suffix == ".gz":
+        print(f"Распаковываю {source}...")
+        with gzip.open(source, "rb") as src, tmp_target.open("wb") as dst:
+            shutil.copyfileobj(src, dst)
+    else:
+        shutil.copyfile(source, tmp_target)
+
+    tmp_target.replace(target)
+    print(f"Файл {target} готов. Запустите Redis, используя этот dump.rdb.")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Полный бэкап Redis в формате RDB.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    backup_parser = subparsers.add_parser("backup", help="Сделать JSON-бэкап Redis")
-    backup_parser.add_argument("output", type=Path, help="Путь к файлу для сохранения")
+    backup = subparsers.add_parser("backup", help="Создать RDB-дамп.")
+    backup.add_argument("--output", type=Path, help="Полный путь до файла (если не задан, используется --dir и --prefix).")
+    backup.add_argument(
+        "--dir",
+        dest="directory",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help="Каталог, куда складывать бэкапы (по умолчанию ./backups).",
+    )
+    backup.add_argument(
+        "--prefix",
+        default=DEFAULT_PREFIX,
+        help="Префикс имени файла (по умолчанию support-bot).",
+    )
+    backup.add_argument(
+        "--redis-cli",
+        default=DEFAULT_REDIS_CLI,
+        help="Путь к redis-cli (по умолчанию ищется в PATH).",
+    )
+    backup.add_argument(
+        "--redis-check-rdb",
+        default=DEFAULT_CHECK_RDB,
+        help="Путь к redis-check-rdb для проверки (--verify).",
+    )
+    backup.add_argument(
+        "--compress",
+        action="store_true",
+        help="Сохранять дамп в виде gzip (.rdb.gz).",
+    )
+    backup.add_argument(
+        "--checksum",
+        action="store_true",
+        help="Сохранять SHA256 рядом с файлом.",
+    )
+    backup.add_argument(
+        "--keep",
+        type=int,
+        default=0,
+        help="Оставлять только N последних бэкапов (работает при автоматическом имени).",
+    )
+    backup.add_argument(
+        "--verify",
+        action="store_true",
+        help="Запустить redis-check-rdb после создания дампа.",
+    )
+    backup.add_argument(
+        "--force",
+        action="store_true",
+        help="Перезаписать существующий файл.",
+    )
+    backup.set_defaults(func=backup_command)
 
-    restore_parser = subparsers.add_parser("restore", help="Восстановить данные из JSON-бэкапа")
-    restore_parser.add_argument("input", type=Path, help="Путь к файлу с бэкапом")
+    restore = subparsers.add_parser(
+        "restore",
+        help="Скопировать RDB-файл в data-директорию Redis (Redis должен быть остановлен).",
+    )
+    restore.add_argument("input", type=Path, help="Путь к файлу бэкапа (.rdb или .rdb.gz).")
+    restore.add_argument(
+        "--data-dir",
+        type=Path,
+        default=DEFAULT_DATA_DIR,
+        help="Каталог, в котором Redis ожидает dump.rdb (по умолчанию ./redis/data).",
+    )
+    restore.add_argument(
+        "--force",
+        action="store_true",
+        help="Перезаписать dump.rdb, даже если он существует.",
+    )
+    restore.add_argument(
+        "--yes",
+        action="store_true",
+        help="Пропустить интерактивное подтверждение.",
+    )
+    restore.set_defaults(func=restore_command)
 
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
-
-    redis_url = load_redis_url()
-    redis = Redis.from_url(redis_url, decode_responses=True)
-    try:
-        if args.command == "backup":
-            await backup(redis, args.output)
-            print(f"Бэкап сохранён в {args.output}")
-        elif args.command == "restore":
-            await restore(redis, args.input)
-            print(f"Данные восстановлены из {args.input}")
-    finally:
-        await redis.close()
+    args.func(args)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
