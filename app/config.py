@@ -63,9 +63,11 @@ class Config:
     Attributes:
     - bot (BotConfig): The bot configuration.
     - redis (RedisConfig): The Redis configuration.
+    - security_enabled (bool): Toggles anti-spam security filters.
     """
     bot: BotConfig
     redis: RedisConfig
+    security_enabled: bool
 
 
 def load_config() -> Config:
@@ -95,4 +97,5 @@ def load_config() -> Config:
             DB=env.int("REDIS_DB"),
             PASSWORD=env.str("REDIS_PASSWORD", default="") or None,
         ),
+        security_enabled=env.bool("SECURITY_FILTER_ENABLED", default=True),
     )

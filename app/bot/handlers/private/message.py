@@ -23,7 +23,11 @@ from app.bot.handlers.group.panel import panel_text, main_keyboard
 from app.bot.utils.redis import RedisStorage, FAQStorage
 from app.bot.utils.redis.models import UserData
 from app.bot.utils.reminders import schedule_support_reminder
-from app.bot.utils.security import analyze_user_message, sanitize_display_name
+from app.bot.utils.security import (
+    SuspicionResult,
+    analyze_user_message,
+    sanitize_display_name,
+)
 
 TOPIC_ICON_RESTORE_DELAY = 3.0
 
@@ -95,12 +99,15 @@ async def handle_incoming_message(
                     return True
         return False
 
-    suspicion = analyze_user_message(
-        full_name=user_data.full_name,
-        username=user_data.username,
-        message_text=text_content,
-        entities_contains_link=entities_contain_links(message),
-    )
+    if manager.config.security_enabled:
+        suspicion = analyze_user_message(
+            full_name=user_data.full_name,
+            username=user_data.username,
+            message_text=text_content,
+            entities_contains_link=entities_contain_links(message),
+        )
+    else:
+        suspicion = SuspicionResult(high=[], medium=[])
 
     if suspicion.should_block:
         user_data.is_banned = True
